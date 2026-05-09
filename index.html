@@ -13,156 +13,238 @@
             --card: #ffffff;
             --text: #1c1c1e;
             --subtext: #8e8e93;
+            --border: #e5e5ea;
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             margin: 0; padding: 0; background-color: var(--bg); color: var(--text);
-            -webkit-font-smoothing: antialiased; padding-bottom: 80px;
+            -webkit-font-smoothing: antialiased;
         }
+        
+        /* Layout Containers */
+        .wrapper {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding-bottom: 80px;
+        }
+        
+        /* Header & Search */
         .header {
-            background: rgba(255, 255, 255, 0.9);
+            background: rgba(242, 242, 247, 0.9);
             backdrop-filter: blur(10px);
             padding: 40px 20px 15px;
             position: sticky; top: 0; z-index: 10;
-            border-bottom: 1px solid #e5e5ea;
+        }
+        .header-content {
+            max-width: 1200px; margin: 0 auto;
         }
         .title { margin: 0 0 15px 0; font-size: 28px; font-weight: 700; }
         .search-bar {
             width: 100%; padding: 12px 15px;
-            border: none; border-radius: 10px;
-            background: #e3e3e8; font-size: 16px;
+            border: 1px solid #d1d1d6; border-radius: 10px;
+            background: #ffffff; font-size: 16px;
             box-sizing: border-box; outline: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+            transition: border-color 0.2s;
         }
-        .container { padding: 15px; }
+        .search-bar:focus { border-color: var(--primary); }
+
+        /* Recipe Grid */
+        .container { padding: 15px 20px; }
+        #recipeList {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+        @media (min-width: 768px) {
+            #recipeList { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+            .header { padding-top: 20px; }
+        }
+
+        /* Recipe Cards */
         .recipe-card {
-            background: var(--card); padding: 18px;
-            border-radius: 16px; margin-bottom: 15px;
+            background: var(--card); padding: 20px;
+            border-radius: 16px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-            cursor: pointer; transition: transform 0.1s;
+            cursor: pointer; transition: transform 0.1s, box-shadow 0.2s;
+            border: 1px solid transparent;
+            height: 100%; box-sizing: border-box;
         }
+        .recipe-card:hover { box-shadow: 0 6px 16px rgba(0,0,0,0.08); }
         .recipe-card:active { transform: scale(0.98); }
-        .recipe-title { margin: 0 0 8px 0; font-size: 18px; font-weight: 600; }
+        .recipe-title { margin: 0 0 12px 0; font-size: 19px; font-weight: 600; line-height: 1.3;}
         .tag {
             display: inline-block; background: #e5f1ff; color: var(--primary);
-            padding: 4px 8px; border-radius: 6px; font-size: 12px;
+            padding: 5px 10px; border-radius: 6px; font-size: 13px;
             margin-right: 6px; margin-bottom: 6px; font-weight: 500;
         }
-        
-        /* Full Screen Views */
-        .fullscreen-view {
+
+        /* Floating Action Button */
+        .fab {
+            position: fixed; bottom: 30px; right: 20px;
+            width: 60px; height: 60px; border-radius: 30px;
+            background: var(--primary); color: white;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 32px; box-shadow: 0 4px 16px rgba(0, 122, 255, 0.4);
+            border: none; cursor: pointer; z-index: 15;
+            transition: transform 0.2s;
+        }
+        .fab:hover { transform: scale(1.05); }
+        @media (min-width: 1240px) {
+            .fab { right: calc((100vw - 1200px) / 2 + 20px); }
+        }
+
+        /* Modal / Fullscreen Views */
+        .overlay-view {
             display: none; position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
             background: var(--bg); z-index: 20;
-            overflow-y: auto; padding: 0;
         }
+        .modal-content {
+            background: var(--card);
+            height: 100%; width: 100%;
+            display: flex; flex-direction: column;
+        }
+        
+        @media (min-width: 768px) {
+            .overlay-view {
+                background: rgba(0,0,0,0.5);
+                backdrop-filter: blur(4px);
+                padding: 40px 20px;
+            }
+            .modal-content {
+                max-width: 700px; margin: 0 auto;
+                border-radius: 20px; height: auto;
+                max-height: calc(100vh - 80px);
+                box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            }
+        }
+
         .view-header {
-            background: var(--card); padding: 40px 20px 15px;
+            padding: 20px;
             display: flex; justify-content: space-between; align-items: center;
-            border-bottom: 1px solid #e5e5ea; position: sticky; top: 0;
+            border-bottom: 1px solid var(--border);
+            background: var(--card);
+            border-radius: 20px 20px 0 0;
+            flex-shrink: 0;
         }
         .btn-text {
             background: none; border: none; color: var(--primary);
             font-size: 17px; padding: 0; cursor: pointer; font-weight: 500;
         }
-        .content-area { padding: 20px; background: var(--card); min-height: 100vh;}
-        
-        /* Typography inside recipe */
-        .content-area h3 { margin-top: 25px; margin-bottom: 10px; font-size: 18px;}
-        .content-area ul, .content-area ol { padding-left: 20px; color: #3a3a3c; line-height: 1.5;}
-        .content-area li { margin-bottom: 8px; }
-
-        /* Floating Action Button */
-        .fab {
-            position: fixed; bottom: 30px; right: 20px;
-            width: 56px; height: 56px; border-radius: 28px;
-            background: var(--primary); color: white;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 30px; box-shadow: 0 4px 12px rgba(0, 122, 255, 0.4);
-            border: none; cursor: pointer; z-index: 15;
+        .content-area { 
+            padding: 25px; 
+            overflow-y: auto; 
+            flex-grow: 1;
+            background: var(--card);
+            border-radius: 0 0 20px 20px;
         }
+
+        /* Typography inside recipe */
+        .content-area h2 { margin-top: 0; font-size: 24px; }
+        .content-area h3 { margin-top: 25px; margin-bottom: 12px; font-size: 18px; border-bottom: 2px solid var(--bg); padding-bottom: 8px;}
+        .content-area ul, .content-area ol { padding-left: 20px; color: #3a3a3c; line-height: 1.6; font-size: 16px;}
+        .content-area li { margin-bottom: 10px; }
 
         /* Form Styles */
-        .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; margin-bottom: 5px; font-weight: 500; font-size: 14px; color: var(--subtext);}
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px; color: var(--text);}
         .form-input {
-            width: 100%; padding: 12px; border: 1px solid #d1d1d6;
-            border-radius: 8px; font-size: 16px; box-sizing: border-box;
-            font-family: inherit;
+            width: 100%; padding: 14px; border: 1px solid #d1d1d6;
+            border-radius: 10px; font-size: 16px; box-sizing: border-box;
+            font-family: inherit; background: #fafafa;
+            transition: border-color 0.2s, background 0.2s;
         }
-        textarea.form-input { height: 80px; resize: none; }
+        .form-input:focus { border-color: var(--primary); background: #ffffff; outline: none; }
+        textarea.form-input { min-height: 100px; resize: vertical; }
+        
         .save-btn {
-            width: 100%; padding: 15px; background: var(--primary);
-            color: white; border: none; border-radius: 10px;
+            width: 100%; padding: 16px; background: var(--primary);
+            color: white; border: none; border-radius: 12px;
             font-size: 17px; font-weight: 600; margin-top: 10px; cursor: pointer;
+            transition: opacity 0.2s;
         }
+        .save-btn:hover { opacity: 0.9; }
 
         /* Sync Modal */
         .sync-alert {
-            display: none; background: #e5f1ff; padding: 15px;
-            border-radius: 10px; margin-bottom: 20px; border: 1px solid #b3d7ff;
+            display: none; background: #f0f7ff; padding: 20px;
+            border-radius: 12px; margin-bottom: 25px; border: 1px solid #cce4ff;
         }
     </style>
 </head>
 <body>
 
     <!-- Main List View -->
-    <div id="listView">
+    <div class="wrapper" id="listView">
         <div class="header">
-            <h1 class="title">My Recipes</h1>
-            <input type="text" id="searchInput" class="search-bar" placeholder="Search recipes...">
+            <div class="header-content">
+                <h1 class="title">My Recipes</h1>
+                <input type="text" id="searchInput" class="search-bar" placeholder="Search recipes...">
+            </div>
         </div>
-        <div class="container" id="recipeList">
-            <!-- Cards inject here -->
+        <div class="container">
+            <div id="recipeList">
+                <!-- Cards inject here -->
+            </div>
         </div>
         <button class="fab" onclick="openAddForm()">+</button>
     </div>
 
     <!-- Single Recipe View -->
-    <div id="recipeView" class="fullscreen-view">
-        <div class="view-header">
-            <button class="btn-text" onclick="closeViews()">‹ Back</button>
+    <div id="recipeView" class="overlay-view">
+        <div class="modal-content">
+            <div class="view-header">
+                <button class="btn-text" onclick="closeViews()">‹ Back</button>
+            </div>
+            <div class="content-area" id="recipeContent"></div>
         </div>
-        <div class="content-area" id="recipeContent"></div>
     </div>
 
     <!-- Add Recipe Form View -->
-    <div id="addView" class="fullscreen-view">
-        <div class="view-header">
-            <button class="btn-text" onclick="closeViews()">Cancel</button>
-            <span style="font-weight: 600; font-size: 17px;">New Recipe</span>
-            <span style="width: 50px;"></span> <!-- Spacer for alignment -->
-        </div>
-        <div class="content-area">
-            
-            <div id="syncAlert" class="sync-alert">
-                <p style="margin-top:0; font-size:14px;"><strong>Saved locally!</strong> To sync across devices, copy this code and paste it into your Git repo's JSON array.</p>
-                <textarea id="jsonOutput" class="form-input" readonly style="height: 100px; font-family: monospace; font-size: 12px;"></textarea>
-                <button onclick="copyJson()" class="save-btn" style="padding: 10px; margin-top: 10px; font-size: 14px;">Copy JSON Code</button>
+    <div id="addView" class="overlay-view">
+        <div class="modal-content">
+            <div class="view-header">
+                <button class="btn-text" onclick="closeViews()">Cancel</button>
+                <span style="font-weight: 600; font-size: 17px;">New Recipe</span>
+                <span style="width: 50px;"></span>
             </div>
+            <div class="content-area">
+                
+                <div id="syncAlert" class="sync-alert">
+                    <p style="margin-top:0; font-size:15px; color: #0056b3;"><strong>Recipe Saved Locally!</strong><br>To permanently sync this to your code repository across all devices, copy this snippet.</p>
+                    <textarea id="jsonOutput" class="form-input" readonly style="height: 120px; font-family: monospace; font-size: 13px; background: white;"></textarea>
+                    <button onclick="copyJson()" class="save-btn" style="padding: 12px; margin-top: 15px; font-size: 15px; background: #0056b3;">Copy JSON Snippet</button>
+                </div>
 
-            <form id="addRecipeForm" onsubmit="saveRecipe(event)">
-                <div class="form-group">
-                    <label>Recipe Title</label>
-                    <input type="text" id="f_title" class="form-input" required placeholder="e.g., Protein Oats">
-                </div>
-                <div class="form-group">
-                    <label>Tags (comma separated)</label>
-                    <input type="text" id="f_tags" class="form-input" placeholder="Vegetarian, Breakfast">
-                </div>
-                <div class="form-group">
-                    <label>Prep/Cook Time</label>
-                    <input type="text" id="f_time" class="form-input" placeholder="15 minutes">
-                </div>
-                <div class="form-group">
-                    <label>Ingredients (one per line)</label>
-                    <textarea id="f_ingredients" class="form-input" required placeholder="1 cup oats&#10;1 scoop whey"></textarea>
-                </div>
-                <div class="form-group">
-                    <label>Instructions (one per line)</label>
-                    <textarea id="f_instructions" class="form-input" required placeholder="Mix in a bowl.&#10;Eat immediately."></textarea>
-                </div>
-                <button type="submit" class="save-btn">Save to Phone</button>
-            </form>
+                <form id="addRecipeForm" onsubmit="saveRecipe(event)">
+                    <div class="form-group">
+                        <label>Recipe Title</label>
+                        <input type="text" id="f_title" class="form-input" required placeholder="e.g., Protein Oats">
+                    </div>
+                    <div class="form-group">
+                        <label>Tags (comma separated)</label>
+                        <input type="text" id="f_tags" class="form-input" placeholder="Vegetarian, Breakfast, Quick">
+                    </div>
+                    <div class="form-group">
+                        <label>Prep/Cook Time</label>
+                        <input type="text" id="f_time" class="form-input" placeholder="15 minutes">
+                    </div>
+                    <div class="form-group">
+                        <label>Ingredients (one per line)</label>
+                        <textarea id="f_ingredients" class="form-input" required placeholder="1 cup oats&#10;1 scoop whey"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Instructions (one per line)</label>
+                        <textarea id="f_instructions" class="form-input" required placeholder="Mix in a bowl.&#10;Eat immediately."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Notes (optional)</label>
+                        <textarea id="f_notes" class="form-input" placeholder="Any substitutions or tips..."></textarea>
+                    </div>
+                    <button type="submit" class="save-btn">Save Recipe</button>
+                </form>
+            </div>
         </div>
     </div>
 
@@ -174,8 +256,8 @@
                 title: "Baked Cottage Cheese Protein Blocks",
                 tags: ["Vegetarian", "High-Protein", "Meal Prep"],
                 time: "30 minutes",
-                ingredients: ["2 cups low-fat cottage cheese", "1/2 cup Greek yogurt", "Spices to taste"],
-                instructions: ["Preheat oven to 180°C.", "Blend the cottage cheese and Greek yogurt until smooth.", "Bake for 25 minutes."],
+                ingredients: ["2 cups low-fat cottage cheese", "1/2 cup Greek yogurt", "Spices to taste (paprika, garlic powder, salt)"],
+                instructions: ["Preheat oven to 180°C.", "Blend the cottage cheese and Greek yogurt until smooth.", "Pour into a lined baking dish and bake for 25 minutes until set.", "Let cool, slice into blocks, and store."],
                 notes: "An egg-free, high-protein alternative to baked paneer."
             }
         ];
@@ -184,10 +266,10 @@
         let allRecipes = [];
 
         function loadRecipes() {
-            // Load custom recipes from Phone Storage
             const localStored = JSON.parse(localStorage.getItem('myCustomRecipes')) || [];
-            // Combine Git recipes and Local recipes
             allRecipes = [...gitRecipes, ...localStored];
+            // Sort alphabetically for a cleaner UI
+            allRecipes.sort((a, b) => a.title.localeCompare(b.title));
             renderList();
         }
 
@@ -198,7 +280,7 @@
             recipeListEl.innerHTML = "";
             const filtered = allRecipes.filter(r => 
                 r.title.toLowerCase().includes(filterText.toLowerCase()) || 
-                r.tags.some(tag => tag.toLowerCase().includes(filterText.toLowerCase()))
+                (r.tags && r.tags.some(tag => tag.toLowerCase().includes(filterText.toLowerCase())))
             );
 
             filtered.forEach(recipe => {
@@ -206,7 +288,7 @@
                 card.className = 'recipe-card';
                 card.onclick = () => openRecipe(recipe);
                 
-                let tagsHtml = recipe.tags.map(tag => `<span class="tag">${tag}</span>`).join('');
+                let tagsHtml = recipe.tags ? recipe.tags.map(tag => `<span class="tag">${tag}</span>`).join('') : '';
                 
                 card.innerHTML = `
                     <h3 class="recipe-title">${recipe.title}</h3>
@@ -217,38 +299,39 @@
         }
 
         function openRecipe(recipe) {
-            let tagsHtml = recipe.tags.map(tag => `<span class="tag">${tag}</span>`).join('');
+            let tagsHtml = recipe.tags ? recipe.tags.map(tag => `<span class="tag">${tag}</span>`).join('') : '';
             let ingredientsHtml = recipe.ingredients.map(ing => `<li>${ing}</li>`).join('');
             let instructionsHtml = recipe.instructions.map(inst => `<li>${inst}</li>`).join('');
 
             document.getElementById('recipeContent').innerHTML = `
-                <h2 style="margin-top:0;">${recipe.title}</h2>
-                <div style="margin-bottom: 15px;">${tagsHtml}</div>
-                <p style="color: #8e8e93;"><strong>Time:</strong> ${recipe.time}</p>
+                <h2>${recipe.title}</h2>
+                <div style="margin-bottom: 20px;">${tagsHtml}</div>
+                <p style="color: var(--subtext); font-size: 15px;"><strong>Time:</strong> ${recipe.time || 'Not specified'}</p>
+                
                 <h3>Ingredients</h3>
                 <ul>${ingredientsHtml}</ul>
+                
                 <h3>Instructions</h3>
                 <ol>${instructionsHtml}</ol>
-                ${recipe.notes ? `<h3>Notes</h3><p><em>${recipe.notes}</em></p>` : ''}
+                
+                ${recipe.notes ? `<h3>Notes</h3><p style="line-height: 1.6; color: #3a3a3c;"><em>${recipe.notes}</em></p>` : ''}
             `;
             
-            document.getElementById('listView').style.display = 'none';
             document.getElementById('recipeView').style.display = 'block';
-            window.scrollTo(0,0);
+            document.body.style.overflow = 'hidden'; // Prevent background scrolling
         }
 
         function openAddForm() {
-            document.getElementById('listView').style.display = 'none';
             document.getElementById('addView').style.display = 'block';
+            document.body.style.overflow = 'hidden';
             document.getElementById('syncAlert').style.display = 'none';
             document.getElementById('addRecipeForm').reset();
-            window.scrollTo(0,0);
         }
 
         function closeViews() {
             document.getElementById('recipeView').style.display = 'none';
             document.getElementById('addView').style.display = 'none';
-            document.getElementById('listView').style.display = 'block';
+            document.body.style.overflow = 'auto'; // Restore scrolling
         }
 
         function saveRecipe(e) {
@@ -256,42 +339,61 @@
             
             const newRecipe = {
                 id: Date.now(),
-                title: document.getElementById('f_title').value,
+                title: document.getElementById('f_title').value.trim(),
                 tags: document.getElementById('f_tags').value.split(',').map(t => t.trim()).filter(t => t),
-                time: document.getElementById('f_time').value,
+                time: document.getElementById('f_time').value.trim(),
                 ingredients: document.getElementById('f_ingredients').value.split('\\n').map(i => i.trim()).filter(i => i),
-                instructions: document.getElementById('f_instructions').value.split('\\n').map(i => i.trim()).filter(i => i)
+                instructions: document.getElementById('f_instructions').value.split('\\n').map(i => i.trim()).filter(i => i),
+                notes: document.getElementById('f_notes').value.trim()
             };
 
-            // Save to phone storage
+            // Save locally
             const localStored = JSON.parse(localStorage.getItem('myCustomRecipes')) || [];
             localStored.push(newRecipe);
             localStorage.setItem('myCustomRecipes', JSON.stringify(localStored));
 
-            // Reload memory and list
+            // Refresh UI
             loadRecipes();
 
-            // Generate Git JSON for user to copy later
+            // Generate JSON Snippet
             const jsonString = JSON.stringify(newRecipe, null, 4) + ",";
             document.getElementById('jsonOutput').value = jsonString;
-            document.getElementById('syncAlert').style.display = 'block';
             
-            alert("Saved to phone!");
+            // Show alert and hide form smoothly
+            document.getElementById('addRecipeForm').reset();
+            document.getElementById('syncAlert').style.display = 'block';
+            document.getElementById('addView').querySelector('.content-area').scrollTo({top: 0, behavior: 'smooth'});
         }
 
         function copyJson() {
             const copyText = document.getElementById("jsonOutput");
             copyText.select();
             document.execCommand("copy");
-            alert("JSON copied! You can now paste this into your index.html on GitHub to sync.");
+            
+            const btn = event.target;
+            const originalText = btn.innerText;
+            btn.innerText = "Copied to Clipboard!";
+            btn.style.background = "#28a745";
+            
+            setTimeout(() => {
+                btn.innerText = originalText;
+                btn.style.background = "#0056b3";
+            }, 3000);
         }
 
         searchInput.addEventListener('input', (e) => {
             renderList(e.target.value);
         });
 
-        // Initialize
+        // Initialize on load
         loadRecipes();
+        
+        // Close modals if clicking outside content on desktop
+        window.onclick = function(event) {
+            if (event.target.className === 'overlay-view') {
+                closeViews();
+            }
+        }
     </script>
 </body>
 </html>
