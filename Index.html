@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>My Recipe Book</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+            color: #333;
+            -webkit-font-smoothing: antialiased;
+        }
+        .header {
+            background: #fff;
+            padding: 40px 20px 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .search-bar {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            box-sizing: border-box;
+            background: #f9f9f9;
+        }
+        .container {
+            padding: 20px;
+        }
+        .recipe-card {
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+            cursor: pointer;
+        }
+        .recipe-title {
+            margin: 0 0 8px 0;
+            font-size: 18px;
+        }
+        .tag {
+            display: inline-block;
+            background: #e2e8f0;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75em;
+            margin-right: 5px;
+            margin-bottom: 5px;
+        }
+        /* Full Screen Recipe View */
+        .recipe-view {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: white;
+            z-index: 20;
+            overflow-y: auto;
+            padding: 40px 20px 20px;
+        }
+        .back-btn {
+            background: none;
+            border: none;
+            color: #007aff;
+            font-size: 16px;
+            padding: 0;
+            margin-bottom: 20px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Main List View -->
+    <div id="listView">
+        <div class="header">
+            <input type="text" id="searchInput" class="search-bar" placeholder="Search recipes...">
+        </div>
+        <div class="container" id="recipeList">
+            <!-- Cards inject here -->
+        </div>
+    </div>
+
+    <!-- Single Recipe View -->
+    <div id="recipeView" class="recipe-view">
+        <button class="back-btn" onclick="closeRecipe()">← Back to Recipes</button>
+        <div id="recipeContent"></div>
+    </div>
+
+    <script>
+        // --- RECIPE DATABASE ---
+        // Paste new JSON snippets from our chat right here
+        const recipes = [
+            {
+                id: 1,
+                title: "Baked Cottage Cheese Protein Blocks",
+                tags: ["Vegetarian", "High-Protein", "Meal Prep"],
+                time: "30 minutes",
+                ingredients: [
+                    "2 cups low-fat cottage cheese",
+                    "1/2 cup Greek yogurt",
+                    "Spices to taste (paprika, garlic powder, salt)"
+                ],
+                instructions: [
+                    "Preheat oven to 180°C.",
+                    "Blend the cottage cheese and Greek yogurt until smooth.",
+                    "Pour into a lined baking dish and bake for 25 minutes until set.",
+                    "Let cool, slice into blocks, and store."
+                ],
+                notes: "An egg-free, high-protein alternative to baked paneer."
+            }
+        ];
+
+        // --- APP LOGIC ---
+        const recipeListEl = document.getElementById('recipeList');
+        const searchInput = document.getElementById('searchInput');
+        const recipeView = document.getElementById('recipeView');
+        const recipeContent = document.getElementById('recipeContent');
+
+        function renderList(filterText = "") {
+            recipeListEl.innerHTML = "";
+            const filtered = recipes.filter(r => 
+                r.title.toLowerCase().includes(filterText.toLowerCase()) || 
+                r.tags.some(tag => tag.toLowerCase().includes(filterText.toLowerCase()))
+            );
+
+            filtered.forEach(recipe => {
+                const card = document.createElement('div');
+                card.className = 'recipe-card';
+                card.onclick = () => openRecipe(recipe);
+                
+                let tagsHtml = recipe.tags.map(tag => `<span class="tag">${tag}</span>`).join('');
+                
+                card.innerHTML = `
+                    <h3 class="recipe-title">${recipe.title}</h3>
+                    <div>${tagsHtml}</div>
+                `;
+                recipeListEl.appendChild(card);
+            });
+        }
+
+        function openRecipe(recipe) {
+            let tagsHtml = recipe.tags.map(tag => `<span class="tag">${tag}</span>`).join('');
+            let ingredientsHtml = recipe.ingredients.map(ing => `<li>${ing}</li>`).join('');
+            let instructionsHtml = recipe.instructions.map(inst => `<li>${inst}</li>`).join('');
+
+            recipeContent.innerHTML = `
+                <h2>${recipe.title}</h2>
+                <div style="margin-bottom: 15px;">${tagsHtml}</div>
+                <p><strong>Time:</strong> ${recipe.time}</p>
+                <h3>Ingredients</h3>
+                <ul>${ingredientsHtml}</ul>
+                <h3>Instructions</h3>
+                <ol>${instructionsHtml}</ol>
+                ${recipe.notes ? `<h3>Notes</h3><p><em>${recipe.notes}</em></p>` : ''}
+            `;
+            
+            document.getElementById('listView').style.display = 'none';
+            recipeView.style.display = 'block';
+            window.scrollTo(0,0);
+        }
+
+        function closeRecipe() {
+            recipeView.style.display = 'none';
+            document.getElementById('listView').style.display = 'block';
+        }
+
+        searchInput.addEventListener('input', (e) => {
+            renderList(e.target.value);
+        });
+
+        renderList();
+    </script>
+</body>
+</html>
