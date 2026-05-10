@@ -3,58 +3,87 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#271712">
+  <meta name="theme-color" content="#24120d">
   <title>Recipe Book - Yashvi and Nishchay</title>
   <link rel="stylesheet" href="styles.css">
   <script src="app.js" defer></script>
 </head>
 <body>
-  <div class="book-shell">
-    <aside class="book-cover" aria-label="Recipe book cover">
-      <div class="cover-stamp">Family Kitchen</div>
-      <div>
-        <p class="cover-kicker">Handwritten Favorites</p>
-        <h1>Recipe Book</h1>
-        <p class="cover-names">Yashvi &amp; Nishchay</p>
-      </div>
-      <button class="cover-add-button" id="addRecipeButton" type="button">Add Recipe</button>
-    </aside>
-
-    <main class="book-pages">
-      <header class="page-header">
-        <div>
-          <p class="eyebrow">Recipe Book - Yashvi and Nishchay</p>
-          <h2>Table of Contents</h2>
+  <main class="book-stage" id="bookStage">
+    <section class="book" aria-label="Recipe book">
+      <aside class="left-page">
+        <div class="page-heading">
+          <p class="eyebrow">Recipe Book</p>
+          <h1>Table of Contents</h1>
+          <p class="subtitle">Yashvi &amp; Nishchay</p>
         </div>
-        <button class="icon-button" id="refreshButton" type="button" aria-label="Refresh recipes" title="Refresh recipes">Refresh</button>
-      </header>
 
-      <section class="toolbar" aria-label="Recipe tools">
         <label class="search-box">
-          <span>Search the book</span>
+          <span>Search recipes</span>
           <input id="searchInput" type="search" placeholder="Search title, tag, ingredient...">
         </label>
-        <div class="status-pill" id="statusMessage">Loading recipes...</div>
-      </section>
 
-      <section class="recipe-grid" id="recipeList" aria-live="polite"></section>
-      <section class="empty-state" id="emptyState" hidden>
-        <h2>No recipes found</h2>
-        <p>Try a different search or add a new page to the book.</p>
-      </section>
-    </main>
-  </div>
+        <section class="toc-list" id="recipeList" aria-live="polite"></section>
+        <section class="empty-state" id="emptyState" hidden>
+          <h2>No recipes found</h2>
+          <p>Try another search or add a new recipe.</p>
+        </section>
 
-  <dialog class="modal detail-modal" id="detailModal">
-    <div class="modal-header">
-      <button class="text-button" id="closeDetailButton" type="button">Close</button>
-      <div class="modal-actions">
-        <button class="primary-button small" id="editRecipeButton" type="button">Update Recipe</button>
-        <button class="danger-button" id="deleteRecipeButton" type="button">Delete</button>
-      </div>
-    </div>
-    <article class="modal-body" id="recipeDetail"></article>
-  </dialog>
+        <div class="toc-actions">
+          <button class="primary-button" id="addRecipeButton" type="button">Add Recipe</button>
+          <button class="text-button" id="refreshButton" type="button">Refresh</button>
+        </div>
+      </aside>
+
+      <section class="right-page" aria-live="polite">
+        <div class="page-turner" id="pageTurner">
+          <article class="cover-page" id="coverPage">
+            <div class="cover-photo-grid" aria-hidden="true">
+              <span class="photo photo-one"></span>
+              <span class="photo photo-two"></span>
+              <span class="photo photo-three"></span>
+            </div>
+            <div class="cover-copy">
+              <p class="eyebrow">Family Kitchen</p>
+              <h2>Recipe Book</h2>
+              <p>Yashvi &amp; Nishchay</p>
+            </div>
+          </article>
+
+          <article class="recipe-page" id="recipePage" hidden>
+            <div class="recipe-page-header">
+              <div>
+                <p class="eyebrow">Selected Recipe</p>
+                <h2 id="recipeTitle"></h2>
+                <div id="recipeMeta" class="recipe-meta"></div>
+              </div>
+              <div class="recipe-actions">
+                <button class="primary-button small" id="editRecipeButton" type="button">Update</button>
+                <button class="danger-button" id="deleteRecipeButton" type="button">Delete</button>
+              </div>
+            </div>
+            <div id="recipeTags" class="tag-list"></div>
+            <div class="recipe-spread">
+              <section class="recipe-section">
+                <h3>Ingredients</h3>
+                <ul id="recipeIngredients"></ul>
+              </section>
+              <section class="recipe-section">
+                <h3>Steps</h3>
+                <ol id="recipeInstructions"></ol>
+              </section>
+            </div>
+            <section class="recipe-section notes-section" id="recipeNotesSection" hidden>
+              <h3>Notes</h3>
+              <p id="recipeNotes"></p>
+            </section>
+          </article>
+        </div>
+      </section>
+    </section>
+
+    <p class="status-message" id="statusMessage" role="status" aria-live="polite"></p>
+  </main>
 
   <dialog class="modal" id="formModal">
     <form class="recipe-form" id="recipeForm">

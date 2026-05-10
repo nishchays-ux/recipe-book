@@ -14,10 +14,10 @@ const elements = {
   addIngredientButton: document.querySelector("#addIngredientButton"),
   addRecipeButton: document.querySelector("#addRecipeButton"),
   addStepButton: document.querySelector("#addStepButton"),
+  bookStage: document.querySelector("#bookStage"),
   cancelFormButton: document.querySelector("#cancelFormButton"),
-  closeDetailButton: document.querySelector("#closeDetailButton"),
+  coverPage: document.querySelector("#coverPage"),
   deleteRecipeButton: document.querySelector("#deleteRecipeButton"),
-  detailModal: document.querySelector("#detailModal"),
   editRecipeButton: document.querySelector("#editRecipeButton"),
   emptyState: document.querySelector("#emptyState"),
   form: document.querySelector("#recipeForm"),
@@ -26,8 +26,16 @@ const elements = {
   ingredientInput: document.querySelector("#ingredientInput"),
   ingredientsList: document.querySelector("#ingredientsList"),
   notesInput: document.querySelector("#notesInput"),
-  recipeDetail: document.querySelector("#recipeDetail"),
+  pageTurner: document.querySelector("#pageTurner"),
+  recipeIngredients: document.querySelector("#recipeIngredients"),
+  recipeInstructions: document.querySelector("#recipeInstructions"),
   recipeList: document.querySelector("#recipeList"),
+  recipeMeta: document.querySelector("#recipeMeta"),
+  recipeNotes: document.querySelector("#recipeNotes"),
+  recipeNotesSection: document.querySelector("#recipeNotesSection"),
+  recipePage: document.querySelector("#recipePage"),
+  recipeTags: document.querySelector("#recipeTags"),
+  recipeTitle: document.querySelector("#recipeTitle"),
   refreshButton: document.querySelector("#refreshButton"),
   searchInput: document.querySelector("#searchInput"),
   statusMessage: document.querySelector("#statusMessage"),
@@ -42,8 +50,8 @@ function hasApiUrl() {
   return API_URL && !API_URL.includes("<subdomain>");
 }
 
-function setStatus(message) {
-  elements.statusMessage.textContent = message;
+function setStatus(message, { quiet = false } = {}) {
+  elements.statusMessage.textContent = quiet ? "" : message;
 }
 
 function normalizeTags(value) {
@@ -88,27 +96,25 @@ function getFilteredRecipes() {
 }
 
 function renderTags(tags = []) {
-  if (!tags.length) {
-    return "";
-  }
-
-  return `<div class="tag-list">${tags.map((tag) => `<span class="tag">${escapeHtml(tag)}</span>`).join("")}</div>`;
+  return tags.map((tag) => `<span class="tag">${escapeHtml(tag)}</span>`).join("");
 }
 
 function renderRecipes() {
   const recipes = getFilteredRecipes();
   elements.recipeList.innerHTML = recipes
-    .map(
-      (recipe) => `
-        <button class="recipe-card" type="button" data-id="${escapeHtml(recipe.id)}">
-          <div>
-            <h2>${escapeHtml(recipe.title)}</h2>
-            <div class="recipe-meta">${escapeHtml(recipe.time || "Time not set")}</div>
-          </div>
-          ${renderTags(recipe.tags)}
+    .map((recipe, index) => {
+      const activeClass = String(recipe.id) === String(state.selectedRecipeId) ? " is-active" : "";
+
+      return `
+        <button class="toc-recipe${activeClass}" type="button" data-id="${escapeHtml(recipe.id)}">
+          <span class="toc-number">${String(index + 1).padStart(2, "0")}</span>
+          <span>
+            <span class="toc-title">${escapeHtml(recipe.title)}</span>
+            <span class="toc-meta">${escapeHtml(recipe.time || "Time not set")}</span>
+          </span>
         </button>
-      `,
-    )
+      `;
+    })
     .join("");
 
   elements.emptyState.hidden = recipes.length > 0;
@@ -130,37 +136,40 @@ function getSelectedRecipe() {
   return state.recipes.find((recipe) => String(recipe.id) === String(state.selectedRecipeId));
 }
 
-function openDetail(recipe) {
+function setListItems(element, items = []) {
+  element.innerHTML = items.map((item) => `<li>${escapeHtml(item)}</li>`).join("");
+}
+
+function flipToRecipe(recipe) {
   state.selectedRecipeId = recipe.id;
+  elements.pageTurner.classList.remove("is-flipping");
+  void elements.pageTurner.offsetWidth;
+  elements.pageTurner.classList.add("is-flipping");
 
-  const ingredients = (recipe.ingredients || []).map((item) => `<li>${escapeHtml(item)}</li>`).join("");
-  const instructions = (recipe.instructions || []).map((item) => `<li>${escapeHtml(item)}</li>`).join("");
+  window.setTimeout(() => {
+    renderSelectedRecipe(recipe);
+  }, 260);
 
-  elements.recipeDetail.innerHTML = `
-    <h2 class="detail-title">${escapeHtml(recipe.title)}</h2>
-    ${renderTags(recipe.tags)}
-    <p class="recipe-meta">${escapeHtml(recipe.time || "Time not set")}</p>
+  renderRecipes();
+}
 
-    <div class="recipe-spread">
-      <section class="detail-section">
-        <h3>Ingredients</h3>
-        <ul>${ingredients}</ul>
-      </section>
+function renderSelectedRecipe(recipe) {
+  elements.coverPage.hidden = true;
+  elements.recipePage.hidden = false;
+  elements.recipeTitle.textContent = recipe.title || "Untitled Recipe";
+  elements.recipeMeta.textContent = recipe.time || "Time not set";
+  elements.recipeTags.innerHTML = renderTags(recipe.tags || []);
+  setListItems(elements.recipeIngredients, recipe.ingredients || []);
+  setListItems(elements.recipeInstructions, recipe.instructions || []);
+  elements.recipeNotes.textContent = recipe.notes || "";
+  elements.recipeNotesSection.hidden = !recipe.notes;
+}
 
-      <section class="detail-section">
-        <h3>Steps</h3>
-        <ol>${instructions}</ol>
-      </section>
-    </div>
-
-    ${
-      recipe.notes
-        ? `<section class="detail-section"><h3>Notes</h3><p class="notes">${escapeHtml(recipe.notes)}</p></section>`
-        : ""
-    }
-  `;
-
-  openDialog(elements.detailModal);
+function showCoverPage() {
+  state.selectedRecipeId = null;
+  elements.coverPage.hidden = false;
+  elements.recipePage.hidden = true;
+  renderRecipes();
 }
 
 function renderItemList(listElement, items, type) {
@@ -239,7 +248,7 @@ function openForm(recipe = null) {
 }
 
 async function loadRecipes() {
-  setStatus("Loading recipes...");
+  setStatus("", { quiet: true });
 
   const url = hasApiUrl() ? API_URL : FALLBACK_URL;
   const response = await fetch(url, { headers: { Accept: "application/json" } });
@@ -251,19 +260,28 @@ async function loadRecipes() {
   state.recipes = await response.json();
   state.usingFallback = !hasApiUrl();
 
+  if (state.selectedRecipeId) {
+    const selectedRecipe = getSelectedRecipe();
+    if (selectedRecipe) {
+      renderSelectedRecipe(selectedRecipe);
+    } else {
+      showCoverPage();
+    }
+  }
+
   renderRecipes();
-  setStatus(state.usingFallback ? "Previewing local recipes.json" : "Synced with API");
+  setStatus("", { quiet: true });
 }
 
 async function saveRecipes(nextRecipes) {
   if (!hasApiUrl()) {
     state.recipes = nextRecipes;
     renderRecipes();
-    setStatus("Saved in this browser preview. Add the Worker URL in app.js to persist.");
+    setStatus("", { quiet: true });
     return;
   }
 
-  setStatus("Saving...");
+  setStatus("", { quiet: true });
   const response = await fetch(API_URL, {
     method: "POST",
     headers: {
@@ -278,7 +296,7 @@ async function saveRecipes(nextRecipes) {
 
   state.recipes = nextRecipes;
   renderRecipes();
-  setStatus("Saved to GitHub");
+  setStatus("", { quiet: true });
 }
 
 function buildRecipeFromForm() {
@@ -316,6 +334,7 @@ async function handleSubmit(event) {
   await saveRecipes(nextRecipes);
   closeDialog(elements.formModal);
   resetForm();
+  flipToRecipe(recipe);
 }
 
 async function handleDelete() {
@@ -327,7 +346,7 @@ async function handleDelete() {
 
   const nextRecipes = state.recipes.filter((item) => String(item.id) !== String(recipe.id));
   await saveRecipes(nextRecipes);
-  closeDialog(elements.detailModal);
+  showCoverPage();
 }
 
 elements.addRecipeButton.addEventListener("click", () => openForm());
@@ -360,27 +379,27 @@ elements.stepsList.addEventListener("click", (event) => {
   }
 });
 elements.cancelFormButton.addEventListener("click", () => closeDialog(elements.formModal));
-elements.closeDetailButton.addEventListener("click", () => closeDialog(elements.detailModal));
 elements.deleteRecipeButton.addEventListener("click", handleDelete);
-elements.editRecipeButton.addEventListener("click", () => {
-  const recipe = getSelectedRecipe();
-  closeDialog(elements.detailModal);
-  openForm(recipe);
-});
+elements.editRecipeButton.addEventListener("click", () => openForm(getSelectedRecipe()));
 elements.form.addEventListener("submit", handleSubmit);
 elements.refreshButton.addEventListener("click", () => loadRecipes().catch((error) => setStatus(error.message)));
-elements.searchInput.addEventListener("input", renderRecipes);
+elements.searchInput.addEventListener("input", () => {
+  renderRecipes();
+  if (!getFilteredRecipes().some((recipe) => String(recipe.id) === String(state.selectedRecipeId))) {
+    showCoverPage();
+  }
+});
 elements.recipeList.addEventListener("click", (event) => {
-  const card = event.target.closest(".recipe-card");
+  const item = event.target.closest(".toc-recipe");
 
-  if (!card) {
+  if (!item) {
     return;
   }
 
-  const recipe = state.recipes.find((item) => String(item.id) === String(card.dataset.id));
+  const recipe = state.recipes.find((entry) => String(entry.id) === String(item.dataset.id));
 
   if (recipe) {
-    openDetail(recipe);
+    flipToRecipe(recipe);
   }
 });
 
