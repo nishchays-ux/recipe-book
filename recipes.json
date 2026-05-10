@@ -1,17 +1,33 @@
 [
   {
     "id": 1,
-    "title": "Baked Cottage Cheese Protein Blocks",
-    "tags": ["High Protein", "Vegetarian"],
+    "title": "Harissa Paneer Sandwich",
+    "tags": [
+      "Paneer",
+      "Harissa",
+      "Sourdough",
+      "Roti"
+    ],
     "time": "30 minutes",
     "ingredients": [
-      "2 cups cottage cheese",
-      "Greek yogurt"
+      "Bell Peppers",
+      "Roasted bell peppers",
+      "Onion",
+      "Tomatoes",
+      "Paneer",
+      "Harissa Paste",
+      "Olive Oil",
+      "Sourdough/Roti",
+      "Basil leaves",
+      "Sriracha",
+      "Ketchup",
+      "Basil"
     ],
     "instructions": [
-      "Blend ingredients",
-      "Bake"
+      "Pan fry paneer and then marinate in harissa paste",
+      "Sauté veggies in chili oil",
+      "Assemble with sriracha and ketchup"
     ],
-    "notes": "Meal prep friendly"
+    "notes": "Meal prep friendly - From Harissa paste meal prep"
   }
 ]
