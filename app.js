@@ -1,4 +1,4 @@
-const API_URL = "https://recipe-api.<subdomain>.workers.dev";
+const API_URL = "https://recipe-api.nishchay-s.workers.dev";
 const FALLBACK_URL = "recipes.json";
 
 const state = {
