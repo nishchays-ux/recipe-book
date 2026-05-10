@@ -27,6 +27,21 @@ body {
   min-height: 100%;
 }
 
+/* Custom Scrollbar for Smooth Premium Feel */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(128, 87, 45, 0.3);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(128, 87, 45, 0.5);
+}
+
 body {
   margin: 0;
   background:
@@ -111,7 +126,21 @@ p {
   line-height: 0.84;
 }
 
-/* ===================== RIGHT PAGE ===================== */
+/* ===================== RIGHT PAGE & SPREAD ===================== */
+
+.book.is-recipe-open .cover-page {
+  display: none !important;
+}
+
+.book.is-recipe-open .right-page {
+  grid-column: 1 / -1;
+  background:
+    linear-gradient(90deg, rgba(54, 27, 13, 0.4), transparent 44px),
+    linear-gradient(270deg, rgba(54, 27, 13, 0.22), transparent 34px),
+    linear-gradient(90deg, transparent calc(50% - 20px), rgba(36, 18, 13, 0.15) 50%, transparent calc(50% + 20px)),
+    repeating-linear-gradient(0deg, transparent 0 33px, var(--line) 34px),
+    var(--paper);
+}
 
 .right-page {
   background:
@@ -152,15 +181,26 @@ p {
 }
 
 .recipe-page {
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  will-change: transform;
+  scroll-behavior: smooth;
 }
 
 /* ===================== TOC ===================== */
 
 .toc-list {
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
   display: grid;
   gap: 8px;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  will-change: transform;
+  scroll-behavior: smooth;
+  padding-right: 4px;
 }
 
 .toc-recipe {
@@ -189,7 +229,7 @@ p {
 .recipe-spread {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  gap: clamp(24px, 5vw, 54px);
 }
 
 .recipe-section {

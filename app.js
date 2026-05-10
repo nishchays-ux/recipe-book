@@ -15,6 +15,7 @@ const elements = {
   addRecipeButton: document.querySelector("#addRecipeButton"),
   addStepButton: document.querySelector("#addStepButton"),
   backToContentsButton: document.querySelector("#backToContentsButton"),
+  book: document.querySelector(".book"),
   bookStage: document.querySelector("#bookStage"),
   cancelFormButton: document.querySelector("#cancelFormButton"),
   coverPage: document.querySelector("#coverPage"),
@@ -157,6 +158,7 @@ function flipToRecipe(recipe) {
 }
 
 function renderSelectedRecipe(recipe) {
+  if (elements.book) elements.book.classList.add("is-recipe-open");
   elements.tocPage.hidden = true;
   elements.recipePage.hidden = false;
   elements.recipeTitle.textContent = recipe.title || "Untitled Recipe";
@@ -179,6 +181,7 @@ function flipToContents() {
 }
 
 function showTableOfContents() {
+  if (elements.book) elements.book.classList.remove("is-recipe-open");
   state.selectedRecipeId = null;
   elements.tocPage.hidden = false;
   elements.recipePage.hidden = true;
