@@ -151,7 +151,7 @@ function flipToRecipe(recipe) {
 
   window.setTimeout(() => {
     renderSelectedRecipe(recipe);
-  }, 240);
+  }, 360);
 
   renderRecipes();
 }
@@ -175,7 +175,7 @@ function flipToContents() {
 
   window.setTimeout(() => {
     showTableOfContents();
-  }, 240);
+  }, 360);
 }
 
 function showTableOfContents() {
