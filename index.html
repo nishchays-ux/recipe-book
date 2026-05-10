@@ -3,43 +3,53 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#f7f2ea">
-  <title>My Recipes</title>
+  <meta name="theme-color" content="#271712">
+  <title>Recipe Book - Yashvi and Nishchay</title>
   <link rel="stylesheet" href="styles.css">
   <script src="app.js" defer></script>
 </head>
 <body>
-  <header class="app-header">
-    <div>
-      <p class="eyebrow">Recipe Book</p>
-      <h1>My Recipes</h1>
-    </div>
-    <button class="icon-button" id="refreshButton" type="button" aria-label="Refresh recipes" title="Refresh recipes">↻</button>
-  </header>
+  <div class="book-shell">
+    <aside class="book-cover" aria-label="Recipe book cover">
+      <div class="cover-stamp">Family Kitchen</div>
+      <div>
+        <p class="cover-kicker">Handwritten Favorites</p>
+        <h1>Recipe Book</h1>
+        <p class="cover-names">Yashvi &amp; Nishchay</p>
+      </div>
+      <button class="cover-add-button" id="addRecipeButton" type="button">Add Recipe</button>
+    </aside>
 
-  <main>
-    <section class="toolbar" aria-label="Recipe tools">
-      <label class="search-box">
-        <span>Search</span>
-        <input id="searchInput" type="search" placeholder="Search title, tag, ingredient...">
-      </label>
-      <div class="status-pill" id="statusMessage">Loading recipes...</div>
-    </section>
+    <main class="book-pages">
+      <header class="page-header">
+        <div>
+          <p class="eyebrow">Recipe Book - Yashvi and Nishchay</p>
+          <h2>Table of Contents</h2>
+        </div>
+        <button class="icon-button" id="refreshButton" type="button" aria-label="Refresh recipes" title="Refresh recipes">Refresh</button>
+      </header>
 
-    <section class="recipe-grid" id="recipeList" aria-live="polite"></section>
-    <section class="empty-state" id="emptyState" hidden>
-      <h2>No recipes found</h2>
-      <p>Try a different search or add a new recipe.</p>
-    </section>
-  </main>
+      <section class="toolbar" aria-label="Recipe tools">
+        <label class="search-box">
+          <span>Search the book</span>
+          <input id="searchInput" type="search" placeholder="Search title, tag, ingredient...">
+        </label>
+        <div class="status-pill" id="statusMessage">Loading recipes...</div>
+      </section>
 
-  <button class="fab" id="addRecipeButton" type="button" aria-label="Add recipe" title="Add recipe">+</button>
+      <section class="recipe-grid" id="recipeList" aria-live="polite"></section>
+      <section class="empty-state" id="emptyState" hidden>
+        <h2>No recipes found</h2>
+        <p>Try a different search or add a new page to the book.</p>
+      </section>
+    </main>
+  </div>
 
-  <dialog class="modal" id="detailModal">
+  <dialog class="modal detail-modal" id="detailModal">
     <div class="modal-header">
       <button class="text-button" id="closeDetailButton" type="button">Close</button>
       <div class="modal-actions">
-        <button class="text-button" id="editRecipeButton" type="button">Edit</button>
+        <button class="primary-button small" id="editRecipeButton" type="button">Update Recipe</button>
         <button class="danger-button" id="deleteRecipeButton" type="button">Delete</button>
       </div>
     </div>
@@ -51,34 +61,50 @@
       <div class="modal-header">
         <button class="text-button" id="cancelFormButton" type="button">Cancel</button>
         <h2 id="formTitle">New Recipe</h2>
-        <button class="text-button strong" type="submit">Save</button>
+        <button class="primary-button small" type="submit">Save</button>
       </div>
 
       <div class="form-body">
-        <label>
-          Title
-          <input id="titleInput" name="title" type="text" required placeholder="Baked Cottage Cheese Protein Blocks">
-        </label>
+        <div class="field-grid">
+          <label>
+            Title
+            <input id="titleInput" name="title" type="text" required placeholder="Baked Cottage Cheese Protein Blocks">
+          </label>
+
+          <label>
+            Time
+            <input id="timeInput" name="time" type="text" placeholder="30 minutes">
+          </label>
+        </div>
 
         <label>
           Tags
           <input id="tagsInput" name="tags" type="text" placeholder="High Protein, Vegetarian">
         </label>
 
-        <label>
-          Time
-          <input id="timeInput" name="time" type="text" placeholder="30 minutes">
-        </label>
+        <section class="item-editor" aria-labelledby="ingredientsLabel">
+          <div class="item-editor-header">
+            <h3 id="ingredientsLabel">Ingredients</h3>
+            <span>Add one at a time</span>
+          </div>
+          <div class="item-entry">
+            <input id="ingredientInput" type="text" placeholder="2 cups cottage cheese">
+            <button class="secondary-button" id="addIngredientButton" type="button">Add</button>
+          </div>
+          <ol class="item-list" id="ingredientsList"></ol>
+        </section>
 
-        <label>
-          Ingredients
-          <textarea id="ingredientsInput" name="ingredients" required placeholder="2 cups cottage cheese&#10;Greek yogurt"></textarea>
-        </label>
-
-        <label>
-          Instructions
-          <textarea id="instructionsInput" name="instructions" required placeholder="Blend ingredients&#10;Bake"></textarea>
-        </label>
+        <section class="item-editor" aria-labelledby="stepsLabel">
+          <div class="item-editor-header">
+            <h3 id="stepsLabel">Steps</h3>
+            <span>Add one at a time</span>
+          </div>
+          <div class="item-entry">
+            <input id="stepInput" type="text" placeholder="Blend ingredients">
+            <button class="secondary-button" id="addStepButton" type="button">Add</button>
+          </div>
+          <ol class="item-list numbered" id="stepsList"></ol>
+        </section>
 
         <label>
           Notes
