@@ -147,7 +147,7 @@ p {
     linear-gradient(90deg, rgba(54, 27, 13, 0.4), transparent 44px),
     linear-gradient(270deg, rgba(54, 27, 13, 0.22), transparent 34px),
     linear-gradient(90deg, transparent calc(50% - 20px), rgba(36, 18, 13, 0.15) 50%, transparent calc(50% + 20px)),
-    linear-gradient(rgba(255, 249, 230, 0.88), rgba(255, 249, 230, 0.88)), /* frosted overlay */
+    linear-gradient(rgba(255, 249, 230, 0.65), rgba(255, 249, 230, 0.65)), /* frosted overlay made more transparent */
     var(--recipe-photo) center/cover;
 }
 
@@ -255,16 +255,17 @@ p {
   overflow-y: auto;
   overflow-x: hidden;
   display: grid;
-  gap: 8px;
+  gap: 2px;
   -webkit-overflow-scrolling: touch;
   padding-right: 4px;
 }
 
 .toc-recipe {
   display: grid;
-  grid-template-columns: 38px 1fr;
+  grid-template-columns: 28px 1fr;
   gap: 10px;
-  padding: 8px 0;
+  padding: 4px 0;
+  align-items: center;
   border-bottom: 1px dashed rgba(128, 87, 45, 0.34);
   background: transparent;
   border: 0;
@@ -274,11 +275,26 @@ p {
 .toc-number {
   display: grid;
   place-items: center;
-  width: 30px;
-  height: 30px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   border: 1px solid rgba(47, 107, 87, 0.28);
   font-weight: 900;
+  font-size: 0.8rem;
+}
+
+.toc-title {
+  display: block;
+  font-weight: 800;
+  color: var(--ink);
+  font-size: 0.95rem;
+  line-height: 1.2;
+}
+
+.toc-meta {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--muted);
 }
 
 /* ===================== RECIPE ===================== */
