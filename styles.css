@@ -480,18 +480,6 @@ h1 {
   color: var(--muted);
 }
 
-.status-message {
-  min-height: 22px;
-  margin: 12px 0 0;
-  color: #ffe2aa;
-  font-size: 0.88rem;
-  font-weight: 800;
-}
-
-.status-message:empty {
-  display: none;
-}
-
 .modal {
   width: min(820px, calc(100vw - 22px));
   max-height: min(820px, calc(100vh - 22px));

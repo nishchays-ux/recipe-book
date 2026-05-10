@@ -38,7 +38,6 @@ const elements = {
   recipeTitle: document.querySelector("#recipeTitle"),
   refreshButton: document.querySelector("#refreshButton"),
   searchInput: document.querySelector("#searchInput"),
-  statusMessage: document.querySelector("#statusMessage"),
   stepInput: document.querySelector("#stepInput"),
   stepsList: document.querySelector("#stepsList"),
   tagsInput: document.querySelector("#tagsInput"),
@@ -50,8 +49,10 @@ function hasApiUrl() {
   return API_URL && !API_URL.includes("<subdomain>");
 }
 
-function setStatus(message, { quiet = false } = {}) {
-  elements.statusMessage.textContent = quiet ? "" : message;
+function reportIssue(message) {
+  if (message) {
+    console.warn(message);
+  }
 }
 
 function normalizeTags(value) {
@@ -248,8 +249,6 @@ function openForm(recipe = null) {
 }
 
 async function loadRecipes() {
-  setStatus("", { quiet: true });
-
   const url = hasApiUrl() ? API_URL : FALLBACK_URL;
   const response = await fetch(url, { headers: { Accept: "application/json" } });
 
@@ -270,18 +269,15 @@ async function loadRecipes() {
   }
 
   renderRecipes();
-  setStatus("", { quiet: true });
 }
 
 async function saveRecipes(nextRecipes) {
   if (!hasApiUrl()) {
     state.recipes = nextRecipes;
     renderRecipes();
-    setStatus("", { quiet: true });
     return;
   }
 
-  setStatus("", { quiet: true });
   const response = await fetch(API_URL, {
     method: "POST",
     headers: {
@@ -296,7 +292,6 @@ async function saveRecipes(nextRecipes) {
 
   state.recipes = nextRecipes;
   renderRecipes();
-  setStatus("", { quiet: true });
 }
 
 function buildRecipeFromForm() {
@@ -315,13 +310,13 @@ async function handleSubmit(event) {
   event.preventDefault();
 
   if (!state.formIngredients.length) {
-    setStatus("Add at least one ingredient.");
+    reportIssue("Add at least one ingredient.");
     elements.ingredientInput.focus();
     return;
   }
 
   if (!state.formSteps.length) {
-    setStatus("Add at least one step.");
+    reportIssue("Add at least one step.");
     elements.stepInput.focus();
     return;
   }
@@ -382,7 +377,7 @@ elements.cancelFormButton.addEventListener("click", () => closeDialog(elements.f
 elements.deleteRecipeButton.addEventListener("click", handleDelete);
 elements.editRecipeButton.addEventListener("click", () => openForm(getSelectedRecipe()));
 elements.form.addEventListener("submit", handleSubmit);
-elements.refreshButton.addEventListener("click", () => loadRecipes().catch((error) => setStatus(error.message)));
+elements.refreshButton.addEventListener("click", () => loadRecipes().catch((error) => reportIssue(error.message)));
 elements.searchInput.addEventListener("input", () => {
   renderRecipes();
   if (!getFilteredRecipes().some((recipe) => String(recipe.id) === String(state.selectedRecipeId))) {
@@ -404,6 +399,6 @@ elements.recipeList.addEventListener("click", (event) => {
 });
 
 loadRecipes().catch((error) => {
-  setStatus(error.message);
+  reportIssue(error.message);
   elements.emptyState.hidden = false;
 });
