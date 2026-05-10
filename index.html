@@ -11,46 +11,47 @@
 <body>
   <main class="book-stage" id="bookStage">
     <section class="book" aria-label="Recipe book">
-      <aside class="left-page">
-        <div class="page-heading">
-          <p class="eyebrow">Recipe Book</p>
-          <h1>Table of Contents</h1>
-          <p class="subtitle">Yashvi &amp; Nishchay</p>
+      <aside class="cover-page" id="coverPage">
+        <div class="cover-photo-grid" aria-hidden="true">
+          <span class="photo photo-one"></span>
+          <span class="photo photo-two"></span>
+          <span class="photo photo-three"></span>
         </div>
-
-        <label class="search-box">
-          <span>Search recipes</span>
-          <input id="searchInput" type="search" placeholder="Search title, tag, ingredient...">
-        </label>
-
-        <section class="toc-list" id="recipeList" aria-live="polite"></section>
-        <section class="empty-state" id="emptyState" hidden>
-          <h2>No recipes found</h2>
-          <p>Try another search or add a new recipe.</p>
-        </section>
-
-        <div class="toc-actions">
-          <button class="primary-button" id="addRecipeButton" type="button">Add Recipe</button>
-          <button class="text-button" id="refreshButton" type="button">Refresh</button>
+        <div class="cover-copy">
+          <p class="eyebrow">Family Kitchen</p>
+          <h1>Recipe Book</h1>
+          <p>Yashvi &amp; Nishchay</p>
         </div>
       </aside>
 
       <section class="right-page" aria-live="polite">
         <div class="page-turner" id="pageTurner">
-          <article class="cover-page" id="coverPage">
-            <div class="cover-photo-grid" aria-hidden="true">
-              <span class="photo photo-one"></span>
-              <span class="photo photo-two"></span>
-              <span class="photo photo-three"></span>
+          <article class="toc-page" id="tocPage">
+            <div class="page-heading">
+              <p class="eyebrow">Recipe Book</p>
+              <h2>Table of Contents</h2>
+              <p class="subtitle">Search, choose a recipe, and turn the page.</p>
             </div>
-            <div class="cover-copy">
-              <p class="eyebrow">Family Kitchen</p>
-              <h2>Recipe Book</h2>
-              <p>Yashvi &amp; Nishchay</p>
+
+            <label class="search-box">
+              <span>Search recipes</span>
+              <input id="searchInput" type="search" placeholder="Search title, tag, ingredient...">
+            </label>
+
+            <section class="toc-list" id="recipeList" aria-live="polite"></section>
+            <section class="empty-state" id="emptyState" hidden>
+              <h2>No recipes found</h2>
+              <p>Try another search or add a new recipe.</p>
+            </section>
+
+            <div class="toc-actions">
+              <button class="primary-button" id="addRecipeButton" type="button">Add Recipe</button>
+              <button class="text-button" id="refreshButton" type="button">Refresh</button>
             </div>
           </article>
 
           <article class="recipe-page" id="recipePage" hidden>
+            <button class="back-button" id="backToContentsButton" type="button">Back to contents</button>
             <div class="recipe-page-header">
               <div>
                 <p class="eyebrow">Selected Recipe</p>

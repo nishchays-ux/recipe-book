@@ -14,6 +14,7 @@ const elements = {
   addIngredientButton: document.querySelector("#addIngredientButton"),
   addRecipeButton: document.querySelector("#addRecipeButton"),
   addStepButton: document.querySelector("#addStepButton"),
+  backToContentsButton: document.querySelector("#backToContentsButton"),
   bookStage: document.querySelector("#bookStage"),
   cancelFormButton: document.querySelector("#cancelFormButton"),
   coverPage: document.querySelector("#coverPage"),
@@ -43,6 +44,7 @@ const elements = {
   tagsInput: document.querySelector("#tagsInput"),
   timeInput: document.querySelector("#timeInput"),
   titleInput: document.querySelector("#titleInput"),
+  tocPage: document.querySelector("#tocPage"),
 };
 
 function hasApiUrl() {
@@ -149,13 +151,13 @@ function flipToRecipe(recipe) {
 
   window.setTimeout(() => {
     renderSelectedRecipe(recipe);
-  }, 260);
+  }, 240);
 
   renderRecipes();
 }
 
 function renderSelectedRecipe(recipe) {
-  elements.coverPage.hidden = true;
+  elements.tocPage.hidden = true;
   elements.recipePage.hidden = false;
   elements.recipeTitle.textContent = recipe.title || "Untitled Recipe";
   elements.recipeMeta.textContent = recipe.time || "Time not set";
@@ -166,9 +168,19 @@ function renderSelectedRecipe(recipe) {
   elements.recipeNotesSection.hidden = !recipe.notes;
 }
 
-function showCoverPage() {
+function flipToContents() {
+  elements.pageTurner.classList.remove("is-flipping");
+  void elements.pageTurner.offsetWidth;
+  elements.pageTurner.classList.add("is-flipping");
+
+  window.setTimeout(() => {
+    showTableOfContents();
+  }, 240);
+}
+
+function showTableOfContents() {
   state.selectedRecipeId = null;
-  elements.coverPage.hidden = false;
+  elements.tocPage.hidden = false;
   elements.recipePage.hidden = true;
   renderRecipes();
 }
@@ -264,7 +276,7 @@ async function loadRecipes() {
     if (selectedRecipe) {
       renderSelectedRecipe(selectedRecipe);
     } else {
-      showCoverPage();
+      showTableOfContents();
     }
   }
 
@@ -341,7 +353,7 @@ async function handleDelete() {
 
   const nextRecipes = state.recipes.filter((item) => String(item.id) !== String(recipe.id));
   await saveRecipes(nextRecipes);
-  showCoverPage();
+  flipToContents();
 }
 
 elements.addRecipeButton.addEventListener("click", () => openForm());
@@ -374,14 +386,17 @@ elements.stepsList.addEventListener("click", (event) => {
   }
 });
 elements.cancelFormButton.addEventListener("click", () => closeDialog(elements.formModal));
+elements.backToContentsButton.addEventListener("click", flipToContents);
 elements.deleteRecipeButton.addEventListener("click", handleDelete);
 elements.editRecipeButton.addEventListener("click", () => openForm(getSelectedRecipe()));
 elements.form.addEventListener("submit", handleSubmit);
 elements.refreshButton.addEventListener("click", () => loadRecipes().catch((error) => reportIssue(error.message)));
 elements.searchInput.addEventListener("input", () => {
   renderRecipes();
-  if (!getFilteredRecipes().some((recipe) => String(recipe.id) === String(state.selectedRecipeId))) {
-    showCoverPage();
+  if (state.selectedRecipeId && !getFilteredRecipes().some((recipe) => String(recipe.id) === String(state.selectedRecipeId))) {
+    showTableOfContents();
+  } else if (!state.selectedRecipeId) {
+    showTableOfContents();
   }
 });
 elements.recipeList.addEventListener("click", (event) => {
