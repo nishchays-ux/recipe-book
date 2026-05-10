@@ -45,6 +45,9 @@ const elements = {
   stepsList: document.querySelector("#stepsList"),
   tagsInput: document.querySelector("#tagsInput"),
   photoInput: document.querySelector("#photoInput"),
+  photoFileInput: document.querySelector("#photoFileInput"),
+  photoPreviewContainer: document.querySelector("#photoPreviewContainer"),
+  photoPlaceholderText: document.querySelector("#photoPlaceholderText"),
   timeInput: document.querySelector("#timeInput"),
   titleInput: document.querySelector("#titleInput"),
   tocPage: document.querySelector("#tocPage"),
@@ -295,6 +298,10 @@ function resetForm() {
   state.formIngredients = [];
   state.formSteps = [];
   elements.formTitle.textContent = "New Recipe";
+  if (elements.photoPreviewContainer) {
+    elements.photoPreviewContainer.style.backgroundImage = "none";
+    if (elements.photoPlaceholderText) elements.photoPlaceholderText.hidden = false;
+  }
   renderFormItems();
 }
 
@@ -306,7 +313,13 @@ function openForm(recipe = null) {
     elements.formTitle.textContent = "Update Recipe";
     elements.titleInput.value = recipe.title || "";
     elements.tagsInput.value = (recipe.tags || []).join(", ");
-    if (elements.photoInput) elements.photoInput.value = recipe.photo || "";
+    if (elements.photoInput) {
+      elements.photoInput.value = recipe.photo || "";
+      if (recipe.photo && elements.photoPreviewContainer) {
+        elements.photoPreviewContainer.style.backgroundImage = `url("${recipe.photo}")`;
+        if (elements.photoPlaceholderText) elements.photoPlaceholderText.hidden = true;
+      }
+    }
     elements.timeInput.value = recipe.time || "";
     elements.notesInput.value = recipe.notes || "";
     state.formIngredients = [...(recipe.ingredients || [])];
@@ -429,6 +442,53 @@ elements.stepInput.addEventListener("keydown", (event) => {
     addFormItem("step");
   }
 });
+
+function processImageFile(file) {
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (event) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      const MAX_WIDTH = 1200;
+      let width = img.width;
+      let height = img.height;
+
+      if (width > MAX_WIDTH) {
+        height = Math.floor((height * MAX_WIDTH) / width);
+        width = MAX_WIDTH;
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, width, height);
+
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.75);
+      
+      if (elements.photoInput) elements.photoInput.value = dataUrl;
+      if (elements.photoPreviewContainer) {
+        elements.photoPreviewContainer.style.backgroundImage = `url("${dataUrl}")`;
+        if (elements.photoPlaceholderText) elements.photoPlaceholderText.hidden = true;
+      }
+    };
+    img.src = event.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+elements.photoPreviewContainer?.addEventListener("click", () => {
+  elements.photoFileInput?.click();
+});
+
+elements.photoFileInput?.addEventListener("change", (event) => {
+  const file = event.target.files[0];
+  if (file) {
+    processImageFile(file);
+  }
+});
+
 elements.ingredientsList.addEventListener("click", (event) => {
   const button = event.target.closest("button[data-type]");
 

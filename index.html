@@ -115,9 +115,13 @@
             Tags
             <input id="tagsInput" name="tags" type="text" placeholder="High Protein, Vegetarian">
           </label>
-          <label>
-            Photo URL
-            <input id="photoInput" name="photo" type="url" placeholder="https://unsplash.com/...">
+          <label class="photo-upload-label">
+            Recipe Photo
+            <input id="photoFileInput" type="file" accept="image/*" style="display: none;">
+            <div id="photoPreviewContainer" class="photo-preview-container">
+              <span id="photoPlaceholderText">Click to upload photo</span>
+            </div>
+            <input id="photoInput" name="photo" type="hidden">
           </label>
         </div>
 
