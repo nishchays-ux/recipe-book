@@ -2,7 +2,7 @@
   {
     "id": 1,
     "title": "Baked Cottage Cheese Protein Blocks",
-    "tags": ["Vegetarian", "High-Protein"],
+    "tags": ["High Protein", "Vegetarian"],
     "time": "30 minutes",
     "ingredients": [
       "2 cups cottage cheese",
@@ -12,6 +12,6 @@
       "Blend ingredients",
       "Bake"
     ],
-    "notes": "High protein meal prep"
+    "notes": "Meal prep friendly"
   }
 ]

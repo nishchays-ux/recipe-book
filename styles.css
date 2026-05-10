@@ -1,0 +1,358 @@
+:root {
+  --bg: #f7f2ea;
+  --panel: #fffaf2;
+  --text: #251f1a;
+  --muted: #73685e;
+  --line: #dfd3c2;
+  --accent: #24736d;
+  --accent-strong: #15514d;
+  --danger: #b83b35;
+  --shadow: 0 14px 35px rgba(68, 49, 30, 0.12);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 22px clamp(16px, 5vw, 48px) 14px;
+  background: rgba(247, 242, 234, 0.92);
+  border-bottom: 1px solid rgba(223, 211, 194, 0.7);
+  backdrop-filter: blur(14px);
+}
+
+.eyebrow {
+  margin: 0 0 3px;
+  color: var(--accent-strong);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin-top: 0;
+}
+
+h1 {
+  margin-bottom: 0;
+  font-size: clamp(1.65rem, 6vw, 2.7rem);
+  line-height: 1.05;
+}
+
+main {
+  width: min(1120px, 100%);
+  margin: 0 auto;
+  padding: 18px clamp(16px, 5vw, 32px) 96px;
+}
+
+.toolbar {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.search-box {
+  display: grid;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.search-box input,
+.recipe-form input,
+.recipe-form textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fffefa;
+  color: var(--text);
+  outline: none;
+}
+
+.search-box input {
+  min-height: 48px;
+  padding: 0 14px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.search-box input:focus,
+.recipe-form input:focus,
+.recipe-form textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(36, 115, 109, 0.14);
+}
+
+.status-pill {
+  align-self: end;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 34px;
+  padding: 8px 11px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255, 250, 242, 0.78);
+  color: var(--muted);
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.recipe-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+
+.recipe-card {
+  display: grid;
+  gap: 13px;
+  min-height: 178px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: 0 2px 0 rgba(255, 255, 255, 0.8);
+  text-align: left;
+  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+}
+
+.recipe-card:hover {
+  border-color: rgba(36, 115, 109, 0.45);
+  box-shadow: var(--shadow);
+  transform: translateY(-2px);
+}
+
+.recipe-card h2 {
+  margin-bottom: 0;
+  font-size: 1.17rem;
+  line-height: 1.25;
+}
+
+.recipe-meta {
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: #e3f1ed;
+  color: var(--accent-strong);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.empty-state {
+  padding: 42px 18px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  text-align: center;
+}
+
+.empty-state p {
+  margin-bottom: 0;
+  color: var(--muted);
+}
+
+.fab {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 4;
+  width: 58px;
+  height: 58px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--accent);
+  color: white;
+  box-shadow: 0 12px 24px rgba(21, 81, 77, 0.28);
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.icon-button,
+.text-button,
+.danger-button {
+  min-height: 40px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--accent-strong);
+  font-weight: 800;
+}
+
+.icon-button {
+  width: 44px;
+  border-color: var(--line);
+  background: var(--panel);
+  font-size: 1.25rem;
+}
+
+.text-button,
+.danger-button {
+  padding: 0 10px;
+}
+
+.strong {
+  color: var(--accent);
+}
+
+.danger-button {
+  color: var(--danger);
+}
+
+.modal {
+  width: min(720px, calc(100vw - 24px));
+  max-height: min(760px, calc(100vh - 24px));
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--text);
+  box-shadow: var(--shadow);
+}
+
+.modal::backdrop {
+  background: rgba(30, 24, 18, 0.45);
+}
+
+.modal-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 58px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(255, 250, 242, 0.96);
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.modal-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.modal-body,
+.form-body {
+  padding: 22px;
+}
+
+.detail-title {
+  margin-bottom: 10px;
+  font-size: clamp(1.55rem, 7vw, 2.45rem);
+  line-height: 1.08;
+}
+
+.detail-section {
+  margin-top: 24px;
+}
+
+.detail-section h3 {
+  margin-bottom: 10px;
+  color: var(--accent-strong);
+  font-size: 0.95rem;
+  text-transform: uppercase;
+}
+
+.detail-section li {
+  margin-bottom: 8px;
+  line-height: 1.55;
+}
+
+.notes {
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.recipe-form {
+  margin: 0;
+}
+
+.form-body {
+  display: grid;
+  gap: 16px;
+}
+
+.recipe-form label {
+  display: grid;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.recipe-form input {
+  min-height: 46px;
+  padding: 0 12px;
+}
+
+.recipe-form textarea {
+  min-height: 108px;
+  padding: 12px;
+  resize: vertical;
+}
+
+@media (min-width: 680px) {
+  .toolbar {
+    grid-template-columns: 1fr auto;
+    align-items: end;
+  }
+
+  .recipe-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 980px) {
+  .recipe-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
