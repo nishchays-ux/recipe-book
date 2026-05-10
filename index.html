@@ -33,10 +33,15 @@
               <p class="subtitle">Search, choose a recipe, and turn the page.</p>
             </div>
 
-            <label class="search-box">
-              <span>Search recipes</span>
-              <input id="searchInput" type="search" placeholder="Search title, tag, ingredient...">
-            </label>
+            <div class="toc-controls">
+              <label class="search-box">
+                <span>Search recipes</span>
+                <input id="searchInput" type="search" placeholder="Search title, tag, ingredient...">
+              </label>
+              <div class="toc-tabs" id="tocTabs">
+                <!-- Dynamically generated tabs -->
+              </div>
+            </div>
 
             <section class="toc-list" id="recipeList" aria-live="polite"></section>
             <section class="empty-state" id="emptyState" hidden>
@@ -105,10 +110,16 @@
           </label>
         </div>
 
-        <label>
-          Tags
-          <input id="tagsInput" name="tags" type="text" placeholder="High Protein, Vegetarian">
-        </label>
+        <div class="field-grid">
+          <label>
+            Tags
+            <input id="tagsInput" name="tags" type="text" placeholder="High Protein, Vegetarian">
+          </label>
+          <label>
+            Photo URL
+            <input id="photoInput" name="photo" type="url" placeholder="https://unsplash.com/...">
+          </label>
+        </div>
 
         <section class="item-editor" aria-labelledby="ingredientsLabel">
           <div class="item-editor-header">

@@ -142,6 +142,15 @@ p {
     var(--paper);
 }
 
+.book.is-recipe-open .right-page.has-photo {
+  background:
+    linear-gradient(90deg, rgba(54, 27, 13, 0.4), transparent 44px),
+    linear-gradient(270deg, rgba(54, 27, 13, 0.22), transparent 34px),
+    linear-gradient(90deg, transparent calc(50% - 20px), rgba(36, 18, 13, 0.15) 50%, transparent calc(50% + 20px)),
+    linear-gradient(rgba(255, 249, 230, 0.88), rgba(255, 249, 230, 0.88)), /* frosted overlay */
+    var(--recipe-photo) center/cover;
+}
+
 .right-page {
   background:
     linear-gradient(90deg, rgba(54, 27, 13, 0.22), transparent 34px),
@@ -187,6 +196,60 @@ p {
 }
 
 /* ===================== TOC ===================== */
+
+.toc-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.toc-tabs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+.toc-tabs::-webkit-scrollbar {
+  height: 4px;
+}
+
+.tab {
+  background: rgba(217, 173, 84, 0.15);
+  color: var(--muted);
+  border: 1px solid transparent;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: bold;
+  white-space: nowrap;
+  transition: transform 0.2s ease, background-color 0.2s ease;
+  min-height: auto;
+}
+
+.tab:hover {
+  background: rgba(217, 173, 84, 0.3);
+  color: var(--ink);
+}
+
+.tab.is-active {
+  background: var(--green);
+  color: var(--paper-soft);
+  border-color: var(--green-dark);
+}
+
+.toc-divider {
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: var(--gold);
+  margin-top: 16px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 4px;
+}
 
 .toc-list {
   overflow-y: auto;
@@ -360,7 +423,6 @@ button:active {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  margin-bottom: 20px;
   font-weight: bold;
   font-size: 0.9rem;
   color: var(--muted);

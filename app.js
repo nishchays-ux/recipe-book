@@ -8,6 +8,7 @@ const state = {
   formIngredients: [],
   formSteps: [],
   usingFallback: false,
+  activeTab: "all",
 };
 
 const elements = {
@@ -43,9 +44,11 @@ const elements = {
   stepInput: document.querySelector("#stepInput"),
   stepsList: document.querySelector("#stepsList"),
   tagsInput: document.querySelector("#tagsInput"),
+  photoInput: document.querySelector("#photoInput"),
   timeInput: document.querySelector("#timeInput"),
   titleInput: document.querySelector("#titleInput"),
   tocPage: document.querySelector("#tocPage"),
+  tocTabs: document.querySelector("#tocTabs"),
 };
 
 function hasApiUrl() {
@@ -76,12 +79,18 @@ function escapeHtml(value) {
 
 function getFilteredRecipes() {
   const query = elements.searchInput.value.trim().toLowerCase();
+  
+  let filtered = state.recipes;
 
-  if (!query) {
-    return [...state.recipes].sort((a, b) => a.title.localeCompare(b.title));
+  if (state.activeTab !== "all") {
+    filtered = filtered.filter(recipe => (recipe.tags || []).includes(state.activeTab));
   }
 
-  return state.recipes
+  if (!query) {
+    return [...filtered].sort((a, b) => a.title.localeCompare(b.title));
+  }
+
+  return filtered
     .filter((recipe) => {
       const searchable = [
         recipe.title,
@@ -103,25 +112,50 @@ function renderTags(tags = []) {
   return tags.map((tag) => `<span class="tag">${escapeHtml(tag)}</span>`).join("");
 }
 
+function renderTabs() {
+  if (!elements.tocTabs) return;
+  const tags = new Set();
+  state.recipes.forEach(recipe => {
+    (recipe.tags || []).forEach(tag => tags.add(tag));
+  });
+  
+  const sortedTags = Array.from(tags).sort();
+  let html = `<button class="tab ${state.activeTab === 'all' ? 'is-active' : ''}" data-tag="all">All</button>`;
+  sortedTags.forEach(tag => {
+    html += `<button class="tab ${state.activeTab === tag ? 'is-active' : ''}" data-tag="${escapeHtml(tag)}">${escapeHtml(tag)}</button>`;
+  });
+  elements.tocTabs.innerHTML = html;
+}
+
 function renderRecipes() {
   const recipes = getFilteredRecipes();
-  elements.recipeList.innerHTML = recipes
-    .map((recipe, index) => {
-      const activeClass = String(recipe.id) === String(state.selectedRecipeId) ? " is-active" : "";
+  
+  let currentLetter = "";
+  let html = "";
+  
+  recipes.forEach((recipe, index) => {
+    const activeClass = String(recipe.id) === String(state.selectedRecipeId) ? " is-active" : "";
+    const firstLetter = recipe.title ? recipe.title.charAt(0).toUpperCase() : "?";
+    
+    if (state.activeTab === "all" && firstLetter !== currentLetter) {
+      currentLetter = firstLetter;
+      html += `<div class="toc-divider">${escapeHtml(currentLetter)}</div>`;
+    }
 
-      return `
-        <button class="toc-recipe${activeClass}" type="button" data-id="${escapeHtml(recipe.id)}">
-          <span class="toc-number">${String(index + 1).padStart(2, "0")}</span>
-          <span>
-            <span class="toc-title">${escapeHtml(recipe.title)}</span>
-            <span class="toc-meta">${escapeHtml(recipe.time || "Time not set")}</span>
-          </span>
-        </button>
-      `;
-    })
-    .join("");
+    html += `
+      <button class="toc-recipe${activeClass}" type="button" data-id="${escapeHtml(recipe.id)}">
+        <span class="toc-number">${String(index + 1).padStart(2, "0")}</span>
+        <span>
+          <span class="toc-title">${escapeHtml(recipe.title)}</span>
+          <span class="toc-meta">${escapeHtml(recipe.time || "Time not set")}</span>
+        </span>
+      </button>
+    `;
+  });
 
+  elements.recipeList.innerHTML = html;
   elements.emptyState.hidden = recipes.length > 0;
+  renderTabs();
 }
 
 function openDialog(dialog) {
@@ -172,6 +206,17 @@ function renderSelectedRecipe(recipe) {
   setListItems(elements.recipeInstructions, recipe.instructions || []);
   elements.recipeNotes.textContent = recipe.notes || "";
   elements.recipeNotesSection.hidden = !recipe.notes;
+
+  const rightPage = document.querySelector(".right-page");
+  if (rightPage) {
+    if (recipe.photo) {
+      rightPage.style.setProperty("--recipe-photo", `url("${recipe.photo}")`);
+      rightPage.classList.add("has-photo");
+    } else {
+      rightPage.style.removeProperty("--recipe-photo");
+      rightPage.classList.remove("has-photo");
+    }
+  }
 }
 
 function flipToContents() {
@@ -261,6 +306,7 @@ function openForm(recipe = null) {
     elements.formTitle.textContent = "Update Recipe";
     elements.titleInput.value = recipe.title || "";
     elements.tagsInput.value = (recipe.tags || []).join(", ");
+    if (elements.photoInput) elements.photoInput.value = recipe.photo || "";
     elements.timeInput.value = recipe.time || "";
     elements.notesInput.value = recipe.notes || "";
     state.formIngredients = [...(recipe.ingredients || [])];
@@ -322,6 +368,7 @@ function buildRecipeFromForm() {
     id: state.editingRecipeId || Date.now(),
     title: elements.titleInput.value.trim(),
     tags: normalizeTags(elements.tagsInput.value),
+    photo: elements.photoInput ? elements.photoInput.value.trim() : "",
     time: elements.timeInput.value.trim(),
     ingredients: [...state.formIngredients],
     instructions: [...state.formSteps],
@@ -408,6 +455,12 @@ elements.searchInput.addEventListener("input", () => {
     showTableOfContents();
   } else if (!state.selectedRecipeId) {
     showTableOfContents();
+  }
+});
+elements.tocTabs?.addEventListener("click", (event) => {
+  if (event.target.classList.contains("tab")) {
+    state.activeTab = event.target.dataset.tag;
+    renderRecipes();
   }
 });
 elements.recipeList.addEventListener("click", (event) => {
