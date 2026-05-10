@@ -41,6 +41,8 @@ const elements = {
   recipeTitle: document.querySelector("#recipeTitle"),
   refreshButton: document.querySelector("#refreshButton"),
   searchInput: document.querySelector("#searchInput"),
+  shareLinkButton: document.querySelector("#shareLinkButton"),
+  shareRecipeButton: document.querySelector("#shareRecipeButton"),
   stepInput: document.querySelector("#stepInput"),
   stepsList: document.querySelector("#stepsList"),
   tagsInput: document.querySelector("#tagsInput"),
@@ -147,11 +149,9 @@ function renderRecipes() {
 
     html += `
       <button class="toc-recipe${activeClass}" type="button" data-id="${escapeHtml(recipe.id)}">
+        <span class="toc-title">${escapeHtml(recipe.title)}</span>
+        <span class="toc-dots"></span>
         <span class="toc-number">${String(index + 1).padStart(2, "0")}</span>
-        <span>
-          <span class="toc-title">${escapeHtml(recipe.title)}</span>
-          <span class="toc-meta">${escapeHtml(recipe.time || "Time not set")}</span>
-        </span>
       </button>
     `;
   });
@@ -507,6 +507,38 @@ elements.cancelFormButton.addEventListener("click", () => closeDialog(elements.f
 elements.backToContentsButton.addEventListener("click", flipToContents);
 elements.deleteRecipeButton.addEventListener("click", handleDelete);
 elements.editRecipeButton.addEventListener("click", () => openForm(getSelectedRecipe()));
+
+function flashButton(button, text) {
+  const original = button.textContent;
+  button.textContent = text;
+  setTimeout(() => { button.textContent = original; }, 1500);
+}
+
+elements.shareLinkButton?.addEventListener("click", () => {
+  const recipe = getSelectedRecipe();
+  if (!recipe) return;
+  const url = `${window.location.origin}${window.location.pathname}?recipe=${encodeURIComponent(recipe.id)}`;
+  navigator.clipboard.writeText(url).then(() => {
+    flashButton(elements.shareLinkButton, "✓ Copied!");
+  });
+});
+
+elements.shareRecipeButton?.addEventListener("click", () => {
+  const recipe = getSelectedRecipe();
+  if (!recipe) return;
+  let text = `🍽️ ${recipe.title}\n`;
+  if (recipe.time) text += `⏱️ ${recipe.time}\n`;
+  if (recipe.tags?.length) text += `🏷️ ${recipe.tags.join(", ")}\n`;
+  text += `\n📝 Ingredients:\n`;
+  (recipe.ingredients || []).forEach(i => { text += `• ${i}\n`; });
+  text += `\n👩‍🍳 Steps:\n`;
+  (recipe.instructions || []).forEach((s, idx) => { text += `${idx + 1}. ${s}\n`; });
+  if (recipe.notes) text += `\n📌 Notes: ${recipe.notes}\n`;
+  text += `\n— From our Recipe Book`;
+  navigator.clipboard.writeText(text).then(() => {
+    flashButton(elements.shareRecipeButton, "✓ Copied!");
+  });
+});
 elements.form.addEventListener("submit", handleSubmit);
 elements.refreshButton.addEventListener("click", () => loadRecipes().catch((error) => reportIssue(error.message)));
 elements.searchInput.addEventListener("input", () => {
