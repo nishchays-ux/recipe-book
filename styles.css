@@ -625,6 +625,7 @@ label {
   overflow-y: auto;
   overscroll-behavior-y: contain;
   max-height: calc(90vh - 70px);
+  transform: translateZ(0);
 }
 
 /* ===================== MOBILE FIX ===================== */

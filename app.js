@@ -154,6 +154,10 @@ function flipToRecipe(recipe) {
     renderSelectedRecipe(recipe);
   }, 360);
 
+  window.setTimeout(() => {
+    if (elements.pageTurner) elements.pageTurner.classList.remove("is-flipping");
+  }, 750);
+
   renderRecipes();
 }
 
@@ -178,6 +182,10 @@ function flipToContents() {
   window.setTimeout(() => {
     showTableOfContents();
   }, 360);
+
+  window.setTimeout(() => {
+    if (elements.pageTurner) elements.pageTurner.classList.remove("is-flipping");
+  }, 750);
 }
 
 function showTableOfContents() {
