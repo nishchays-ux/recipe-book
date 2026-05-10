@@ -184,9 +184,6 @@ p {
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
-  overscroll-behavior-y: contain;
-  will-change: transform;
-  scroll-behavior: smooth;
 }
 
 /* ===================== TOC ===================== */
@@ -197,9 +194,6 @@ p {
   display: grid;
   gap: 8px;
   -webkit-overflow-scrolling: touch;
-  overscroll-behavior-y: contain;
-  will-change: transform;
-  scroll-behavior: smooth;
   padding-right: 4px;
 }
 
@@ -600,8 +594,7 @@ label {
 }
 
 .modal::backdrop {
-  background: rgba(36, 18, 13, 0.6);
-  backdrop-filter: blur(4px);
+  background: rgba(36, 18, 13, 0.85);
   animation: backdropFadeIn 0.3s ease forwards;
 }
 
@@ -630,6 +623,7 @@ label {
 .form-body {
   padding: 24px;
   overflow-y: auto;
+  overscroll-behavior-y: contain;
   max-height: calc(90vh - 70px);
 }
 
