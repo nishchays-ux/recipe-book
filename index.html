@@ -96,7 +96,7 @@
       <div class="modal-header">
         <button class="text-button" id="cancelFormButton" type="button">Cancel</button>
         <h2 id="formTitle">New Recipe</h2>
-        <button class="primary-button small" type="submit">Save</button>
+        <button class="primary-button small" id="saveButton" type="submit">Save</button>
       </div>
 
       <div class="form-body">
@@ -158,5 +158,9 @@
       </div>
     </form>
   </dialog>
+  <div id="loadingOverlay" class="loading-overlay" hidden>
+    <div class="loading-spinner"></div>
+    <p class="loading-text">Saving recipe…</p>
+  </div>
 </body>
 </html>

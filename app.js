@@ -9,6 +9,7 @@ const state = {
   formSteps: [],
   usingFallback: false,
   activeTab: "all",
+  isSaving: false,
 };
 
 const elements = {
@@ -54,6 +55,8 @@ const elements = {
   titleInput: document.querySelector("#titleInput"),
   tocPage: document.querySelector("#tocPage"),
   tocTabs: document.querySelector("#tocTabs"),
+  saveButton: document.querySelector("#saveButton"),
+  loadingOverlay: document.querySelector("#loadingOverlay"),
 };
 
 function hasApiUrl() {
@@ -163,13 +166,22 @@ function renderRecipes() {
 
 function openDialog(dialog) {
   if (!dialog.open) {
-    dialog.showModal();
+    // Safari polyfill: dialog may not support showModal natively on older iOS
+    if (typeof dialog.showModal === "function") {
+      dialog.showModal();
+    } else {
+      dialog.setAttribute("open", "");
+    }
   }
 }
 
 function closeDialog(dialog) {
   if (dialog.open) {
-    dialog.close();
+    if (typeof dialog.close === "function") {
+      dialog.close();
+    } else {
+      dialog.removeAttribute("open");
+    }
   }
 }
 
@@ -181,8 +193,11 @@ function setListItems(element, items = []) {
   element.innerHTML = items.map((item) => `<li>${escapeHtml(item)}</li>`).join("");
 }
 
-function flipToRecipe(recipe) {
+function flipToRecipe(recipe, pushState = true) {
   state.selectedRecipeId = recipe.id;
+  if (pushState) {
+    history.pushState({ recipeId: recipe.id }, "", `#recipe-${recipe.id}`);
+  }
   elements.pageTurner.classList.remove("is-flipping");
   void elements.pageTurner.offsetWidth;
   elements.pageTurner.classList.add("is-flipping");
@@ -239,6 +254,7 @@ function flipToContents() {
 function showTableOfContents() {
   if (elements.book) elements.book.classList.remove("is-recipe-open");
   state.selectedRecipeId = null;
+  history.pushState({}, "", window.location.pathname);
   elements.tocPage.hidden = false;
   elements.recipePage.hidden = true;
   renderRecipes();
@@ -360,20 +376,23 @@ async function saveRecipes(nextRecipes) {
     return;
   }
 
-  const response = await fetch(API_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(nextRecipes),
-  });
+  setLoading(true);
+  try {
+    const response = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(nextRecipes),
+    });
 
-  if (!response.ok) {
-    throw new Error(`Could not save recipes (${response.status})`);
+    if (!response.ok) {
+      throw new Error(`Could not save recipes (${response.status})`);
+    }
+
+    state.recipes = nextRecipes;
+    renderRecipes();
+  } finally {
+    setLoading(false);
   }
-
-  state.recipes = nextRecipes;
-  renderRecipes();
 }
 
 function buildRecipeFromForm() {
@@ -517,9 +536,12 @@ function flashButton(button, text) {
 elements.shareLinkButton?.addEventListener("click", () => {
   const recipe = getSelectedRecipe();
   if (!recipe) return;
-  const url = `${window.location.origin}${window.location.pathname}?recipe=${encodeURIComponent(recipe.id)}`;
+  const url = `${window.location.origin}${window.location.pathname}#recipe-${encodeURIComponent(recipe.id)}`;
   navigator.clipboard.writeText(url).then(() => {
     flashButton(elements.shareLinkButton, "✓ Copied!");
+  }).catch(() => {
+    // Safari clipboard fallback
+    prompt("Copy this link:", url);
   });
 });
 
@@ -537,8 +559,47 @@ elements.shareRecipeButton?.addEventListener("click", () => {
   text += `\n— From our Recipe Book`;
   navigator.clipboard.writeText(text).then(() => {
     flashButton(elements.shareRecipeButton, "✓ Copied!");
+  }).catch(() => {
+    // Safari fallback
+    prompt("Copy this recipe:", text);
   });
 });
+
+function setLoading(on) {
+  state.isSaving = on;
+  if (elements.loadingOverlay) {
+    elements.loadingOverlay.hidden = !on;
+  }
+  if (elements.saveButton) {
+    elements.saveButton.disabled = on;
+    elements.saveButton.textContent = on ? "Saving…" : "Save";
+  }
+}
+
+// Handle browser back/forward navigation
+window.addEventListener("popstate", () => {
+  const hash = window.location.hash;
+  if (hash.startsWith("#recipe-")) {
+    const id = decodeURIComponent(hash.replace("#recipe-", ""));
+    const recipe = state.recipes.find(r => String(r.id) === String(id));
+    if (recipe) {
+      flipToRecipe(recipe, false);
+      return;
+    }
+  }
+  showTableOfContents();
+});
+
+function navigateToHashRecipe() {
+  const hash = window.location.hash;
+  if (hash.startsWith("#recipe-")) {
+    const id = decodeURIComponent(hash.replace("#recipe-", ""));
+    const recipe = state.recipes.find(r => String(r.id) === String(id));
+    if (recipe) {
+      flipToRecipe(recipe, false);
+    }
+  }
+}
 elements.form.addEventListener("submit", handleSubmit);
 elements.refreshButton.addEventListener("click", () => loadRecipes().catch((error) => reportIssue(error.message)));
 elements.searchInput.addEventListener("input", () => {
@@ -569,7 +630,9 @@ elements.recipeList.addEventListener("click", (event) => {
   }
 });
 
-loadRecipes().catch((error) => {
+loadRecipes().then(() => {
+  navigateToHashRecipe();
+}).catch((error) => {
   reportIssue(error.message);
   elements.emptyState.hidden = false;
 });
