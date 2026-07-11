@@ -117,5 +117,31 @@
       "Blend all ingredients and add salt to taste"
     ],
     "notes": ""
+  },
+  {
+    "id": 1783814204565,
+    "title": "Homemade Hummus",
+    "tags": [
+      "Healthy",
+      "Protien"
+    ],
+    "photo": "",
+    "time": "10 mins",
+    "ingredients": [
+      "1 can chickpeas",
+      "2-3 tbsp of the can liquid",
+      "2 ice cubes",
+      "1/2 tsp ground cumin, salt",
+      "1 garlic clove",
+      "2 tbsp olive oil",
+      "1/4 cup lemon juice",
+      "1/4 cup tahini"
+    ],
+    "instructions": [
+      "Put everything in blender except the can liquid",
+      "Blend 30 seconds, add the liquid and blend again",
+      "Serve with olive oil topping with red chilli powder."
+    ],
+    "notes": "Can also mix roasted garlic or roasted red peppers for garlic or red pepper hummus"
   }
 ]
