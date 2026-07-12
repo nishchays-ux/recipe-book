@@ -5,8 +5,14 @@ const state = {
   recipes: [],
   selectedRecipeId: null,
   editingRecipeId: null,
-  formIngredients: [],
-  formSteps: [],
+  
+  // Dual-Language State
+  formTitle: { en: "", gu: "" },
+  formIngredients: { en: [], gu: [] },
+  formSteps: { en: [], gu: [] },
+  formLang: "en", // Which language is the form currently showing
+  viewLang: "en", // Which language is the recipe view currently showing
+  
   usingFallback: false,
   activeTab: "all",
   isSaving: false,
@@ -61,25 +67,12 @@ const elements = {
   // AI Elements
   dictateButton: document.querySelector("#dictateButton"),
   translateButton: document.querySelector("#translateButton"),
-  dictationLang: document.querySelector("#dictationLang"),
+  viewTranslateButton: document.querySelector("#viewTranslateButton"),
   dictationStatus: document.querySelector("#dictationStatus"),
 };
 
 function hasApiUrl() {
   return API_URL && !API_URL.includes("<subdomain>");
-}
-
-function reportIssue(message) {
-  if (message) {
-    console.warn(message);
-  }
-}
-
-function normalizeTags(value) {
-  return value
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
 }
 
 function escapeHtml(value) {
@@ -93,33 +86,23 @@ function escapeHtml(value) {
 
 function getFilteredRecipes() {
   const query = elements.searchInput.value.trim().toLowerCase();
-  
   let filtered = state.recipes;
 
   if (state.activeTab !== "all") {
     filtered = filtered.filter(recipe => (recipe.tags || []).includes(state.activeTab));
   }
 
-  if (!query) {
-    return [...filtered].sort((a, b) => a.title.localeCompare(b.title));
-  }
+  if (!query) return [...filtered].sort((a, b) => a.title.localeCompare(b.title));
 
-  return filtered
-    .filter((recipe) => {
-      const searchable = [
-        recipe.title,
-        recipe.time,
-        recipe.notes,
-        ...(recipe.tags || []),
-        ...(recipe.ingredients || []),
-        ...(recipe.instructions || []),
-      ]
-        .join(" ")
-        .toLowerCase();
-
-      return searchable.includes(query);
-    })
-    .sort((a, b) => a.title.localeCompare(b.title));
+  return filtered.filter((recipe) => {
+    const searchable = [
+      recipe.title, recipe.title_gu, recipe.time, recipe.notes,
+      ...(recipe.tags || []),
+      ...(recipe.ingredients || []), ...(recipe.ingredients_gu || []),
+      ...(recipe.instructions || []), ...(recipe.instructions_gu || [])
+    ].join(" ").toLowerCase();
+    return searchable.includes(query);
+  }).sort((a, b) => a.title.localeCompare(b.title));
 }
 
 function renderTags(tags = []) {
@@ -143,13 +126,13 @@ function renderTabs() {
 
 function renderRecipes() {
   const recipes = getFilteredRecipes();
-  
   let currentLetter = "";
   let html = "";
   
   recipes.forEach((recipe, index) => {
     const activeClass = String(recipe.id) === String(state.selectedRecipeId) ? " is-active" : "";
-    const firstLetter = recipe.title ? recipe.title.charAt(0).toUpperCase() : "?";
+    const displayTitle = state.viewLang === 'gu' && recipe.title_gu ? recipe.title_gu : recipe.title;
+    const firstLetter = displayTitle ? displayTitle.charAt(0).toUpperCase() : "?";
     
     if (state.activeTab === "all" && firstLetter !== currentLetter) {
       currentLetter = firstLetter;
@@ -158,7 +141,7 @@ function renderRecipes() {
 
     html += `
       <button class="toc-recipe${activeClass}" type="button" data-id="${escapeHtml(recipe.id)}">
-        <span class="toc-title">${escapeHtml(recipe.title)}</span>
+        <span class="toc-title">${escapeHtml(displayTitle)}</span>
         <span class="toc-dots"></span>
         <span class="toc-number">${String(index + 1).padStart(2, "0")}</span>
       </button>
@@ -172,21 +155,15 @@ function renderRecipes() {
 
 function openDialog(dialog) {
   if (!dialog.open) {
-    if (typeof dialog.showModal === "function") {
-      dialog.showModal();
-    } else {
-      dialog.setAttribute("open", "");
-    }
+    if (typeof dialog.showModal === "function") dialog.showModal();
+    else dialog.setAttribute("open", "");
   }
 }
 
 function closeDialog(dialog) {
   if (dialog.open) {
-    if (typeof dialog.close === "function") {
-      dialog.close();
-    } else {
-      dialog.removeAttribute("open");
-    }
+    if (typeof dialog.close === "function") dialog.close();
+    else dialog.removeAttribute("open");
   }
 }
 
@@ -200,21 +177,15 @@ function setListItems(element, items = []) {
 
 function flipToRecipe(recipe, pushState = true) {
   state.selectedRecipeId = recipe.id;
-  if (pushState) {
-    history.pushState({ recipeId: recipe.id }, "", `#recipe-${recipe.id}`);
-  }
+  state.viewLang = 'en'; // Default to English when opening
+  if (pushState) history.pushState({ recipeId: recipe.id }, "", `#recipe-${recipe.id}`);
+  
   elements.pageTurner.classList.remove("is-flipping");
   void elements.pageTurner.offsetWidth;
   elements.pageTurner.classList.add("is-flipping");
 
-  window.setTimeout(() => {
-    renderSelectedRecipe(recipe);
-  }, 360);
-
-  window.setTimeout(() => {
-    if (elements.pageTurner) elements.pageTurner.classList.remove("is-flipping");
-  }, 750);
-
+  window.setTimeout(() => renderSelectedRecipe(recipe), 360);
+  window.setTimeout(() => elements.pageTurner.classList.remove("is-flipping"), 750);
   renderRecipes();
 }
 
@@ -222,11 +193,22 @@ function renderSelectedRecipe(recipe) {
   if (elements.book) elements.book.classList.add("is-recipe-open");
   elements.tocPage.hidden = true;
   elements.recipePage.hidden = false;
-  elements.recipeTitle.textContent = recipe.title || "Untitled Recipe";
+  
+  // Handle Dual Language View Toggle
+  const hasGujarati = !!recipe.title_gu || (recipe.ingredients_gu && recipe.ingredients_gu.length > 0);
+  elements.viewTranslateButton.hidden = !hasGujarati;
+  elements.viewTranslateButton.textContent = state.viewLang === 'en' ? '🌐 View in Gujarati' : '🌐 View in English';
+
+  // Apply Content
+  elements.recipeTitle.textContent = (state.viewLang === 'gu' && recipe.title_gu) ? recipe.title_gu : (recipe.title || "Untitled Recipe");
   elements.recipeMeta.textContent = recipe.time || "Time not set";
   elements.recipeTags.innerHTML = renderTags(recipe.tags || []);
-  setListItems(elements.recipeIngredients, recipe.ingredients || []);
-  setListItems(elements.recipeInstructions, recipe.instructions || []);
+  
+  const activeIngredients = (state.viewLang === 'gu' && recipe.ingredients_gu && recipe.ingredients_gu.length) ? recipe.ingredients_gu : (recipe.ingredients || []);
+  const activeInstructions = (state.viewLang === 'gu' && recipe.instructions_gu && recipe.instructions_gu.length) ? recipe.instructions_gu : (recipe.instructions || []);
+  
+  setListItems(elements.recipeIngredients, activeIngredients);
+  setListItems(elements.recipeInstructions, activeInstructions);
   elements.recipeNotes.textContent = recipe.notes || "";
   elements.recipeNotesSection.hidden = !recipe.notes;
 
@@ -242,18 +224,21 @@ function renderSelectedRecipe(recipe) {
   }
 }
 
+elements.viewTranslateButton.addEventListener("click", () => {
+  const recipe = getSelectedRecipe();
+  if (!recipe) return;
+  state.viewLang = state.viewLang === 'en' ? 'gu' : 'en';
+  renderSelectedRecipe(recipe);
+  renderRecipes(); // Update TOC names
+});
+
 function flipToContents() {
   elements.pageTurner.classList.remove("is-flipping");
   void elements.pageTurner.offsetWidth;
   elements.pageTurner.classList.add("is-flipping");
 
-  window.setTimeout(() => {
-    showTableOfContents();
-  }, 360);
-
-  window.setTimeout(() => {
-    if (elements.pageTurner) elements.pageTurner.classList.remove("is-flipping");
-  }, 750);
+  window.setTimeout(() => showTableOfContents(), 360);
+  window.setTimeout(() => elements.pageTurner.classList.remove("is-flipping"), 750);
 }
 
 function showTableOfContents() {
@@ -265,22 +250,30 @@ function showTableOfContents() {
   renderRecipes();
 }
 
-// --- Drag & Drop / Edit List Logic ---
+// --- DUAL LANGUAGE FORM LOGIC ---
+
+// Helper to save current input values into state before flipping
+function syncInputsToState() {
+  state.formTitle[state.formLang] = elements.titleInput.value.trim();
+}
+
+// Helper to push state into inputs
+function syncStateToInputs() {
+  elements.titleInput.value = state.formTitle[state.formLang] || "";
+  renderFormItems();
+}
+
 let draggedItemInfo = null;
 
 function renderItemList(listElement, items, type) {
-  listElement.innerHTML = items
-    .map(
-      (item, index) => `
-        <li class="item-row" draggable="true" data-type="${type}" data-index="${index}" style="display: flex; gap: 10px; align-items: center; cursor: grab; padding: 4px 0;">
-          <span class="drag-handle" style="color: #888; cursor: grab; user-select: none;" title="Drag to reorder">≡</span>
-          <span style="flex-grow: 1;">${escapeHtml(item)}</span>
-          <button class="secondary-button small" type="button" data-action="edit" data-type="${type}" data-index="${index}" title="Edit item" style="padding: 2px 6px;">✏️</button>
-          <button class="danger-button small" type="button" data-action="remove" data-type="${type}" data-index="${index}" title="Remove item" style="padding: 2px 6px;">❌</button>
-        </li>
-      `,
-    )
-    .join("");
+  listElement.innerHTML = items.map((item, index) => `
+    <li class="item-row" draggable="true" data-type="${type}" data-index="${index}" style="display: flex; gap: 10px; align-items: center; cursor: grab; padding: 4px 0;">
+      <span class="drag-handle" style="color: #888; cursor: grab; user-select: none;">≡</span>
+      <span style="flex-grow: 1;">${escapeHtml(item)}</span>
+      <button class="secondary-button small" type="button" data-action="edit" data-type="${type}" data-index="${index}" style="padding: 2px 6px;">✏️</button>
+      <button class="danger-button small" type="button" data-action="remove" data-type="${type}" data-index="${index}" style="padding: 2px 6px;">❌</button>
+    </li>
+  `).join("");
 }
 
 function handleListAction(event) {
@@ -290,15 +283,16 @@ function handleListAction(event) {
   const action = button.dataset.action;
   const type = button.dataset.type;
   const index = Number(button.dataset.index);
+  const list = type === "ingredient" ? state.formIngredients[state.formLang] : state.formSteps[state.formLang];
 
   if (action === "remove") {
-    removeFormItem(type, index);
+    list.splice(index, 1);
+    renderFormItems();
   } else if (action === "edit") {
-    const list = type === "ingredient" ? state.formIngredients : state.formSteps;
     const input = type === "ingredient" ? elements.ingredientInput : elements.stepInput;
-    
     input.value = list[index];
-    removeFormItem(type, index);
+    list.splice(index, 1);
+    renderFormItems();
     input.focus();
   }
 }
@@ -311,27 +305,19 @@ function setupDragAndDrop(listElement) {
     e.dataTransfer.effectAllowed = "move";
     li.style.opacity = "0.5";
   });
-
-  listElement.addEventListener("dragover", (e) => {
-    e.preventDefault(); 
-    e.dataTransfer.dropEffect = "move";
-  });
-
+  listElement.addEventListener("dragover", (e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; });
   listElement.addEventListener("drop", (e) => {
     e.preventDefault();
     const targetLi = e.target.closest("li");
     if (!targetLi || !draggedItemInfo) return;
-
     const targetIndex = Number(targetLi.dataset.index);
-    const list = draggedItemInfo.type === "ingredient" ? state.formIngredients : state.formSteps;
+    const list = draggedItemInfo.type === "ingredient" ? state.formIngredients[state.formLang] : state.formSteps[state.formLang];
     
     const [movedItem] = list.splice(draggedItemInfo.index, 1);
     list.splice(targetIndex, 0, movedItem);
-    
     renderFormItems();
     draggedItemInfo = null;
   });
-
   listElement.addEventListener("dragend", (e) => {
     if (e.target.closest("li")) e.target.closest("li").style.opacity = "1";
   });
@@ -341,63 +327,63 @@ elements.ingredientsList.addEventListener("click", handleListAction);
 elements.stepsList.addEventListener("click", handleListAction);
 setupDragAndDrop(elements.ingredientsList);
 setupDragAndDrop(elements.stepsList);
-// -------------------------------------
 
 function renderFormItems() {
-  renderItemList(elements.ingredientsList, state.formIngredients, "ingredient");
-  renderItemList(elements.stepsList, state.formSteps, "step");
+  renderItemList(elements.ingredientsList, state.formIngredients[state.formLang], "ingredient");
+  renderItemList(elements.stepsList, state.formSteps[state.formLang], "step");
 }
 
 function addFormItem(type) {
   const input = type === "ingredient" ? elements.ingredientInput : elements.stepInput;
   const value = input.value.trim();
+  if (!value) { input.focus(); return; }
 
-  if (!value) {
-    input.focus();
-    return;
-  }
-
-  if (type === "ingredient") {
-    state.formIngredients.push(value);
-  } else {
-    state.formSteps.push(value);
-  }
+  if (type === "ingredient") state.formIngredients[state.formLang].push(value);
+  else state.formSteps[state.formLang].push(value);
 
   input.value = "";
   input.focus();
   renderFormItems();
 }
 
-function removeFormItem(type, index) {
-  if (type === "ingredient") {
-    state.formIngredients.splice(index, 1);
-  } else {
-    state.formSteps.splice(index, 1);
-  }
-  renderFormItems();
-}
+elements.ingredientInput.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); addFormItem("ingredient"); }});
+elements.stepInput.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); addFormItem("step"); }});
+elements.addIngredientButton.addEventListener("click", () => addFormItem("ingredient"));
+elements.addStepButton.addEventListener("click", () => addFormItem("step"));
+elements.titleInput.addEventListener("blur", syncInputsToState);
 
 function resetForm() {
   elements.form.reset();
   state.editingRecipeId = null;
-  state.formIngredients = [];
-  state.formSteps = [];
+  state.formLang = "en";
+  state.formTitle = { en: "", gu: "" };
+  state.formIngredients = { en: [], gu: [] };
+  state.formSteps = { en: [], gu: [] };
+  
   elements.formTitle.textContent = "New Recipe";
+  elements.translateButton.textContent = "🌐 Translate to Gujarati";
+  
   if (elements.photoPreviewContainer) {
     elements.photoPreviewContainer.style.backgroundImage = "none";
     if (elements.photoPlaceholderText) elements.photoPlaceholderText.hidden = false;
   }
-  renderFormItems();
+  syncStateToInputs();
 }
 
 function openForm(recipe = null) {
   resetForm();
-
   if (recipe) {
     state.editingRecipeId = recipe.id;
     elements.formTitle.textContent = "Update Recipe";
-    elements.titleInput.value = recipe.title || "";
+    
+    state.formTitle = { en: recipe.title || "", gu: recipe.title_gu || "" };
+    state.formIngredients = { en: [...(recipe.ingredients || [])], gu: [...(recipe.ingredients_gu || [])] };
+    state.formSteps = { en: [...(recipe.instructions || [])], gu: [...(recipe.instructions_gu || [])] };
+    
     elements.tagsInput.value = (recipe.tags || []).join(", ");
+    elements.timeInput.value = recipe.time || "";
+    elements.notesInput.value = recipe.notes || "";
+    
     if (elements.photoInput) {
       elements.photoInput.value = recipe.photo || "";
       if (recipe.photo && elements.photoPreviewContainer) {
@@ -405,36 +391,24 @@ function openForm(recipe = null) {
         if (elements.photoPlaceholderText) elements.photoPlaceholderText.hidden = true;
       }
     }
-    elements.timeInput.value = recipe.time || "";
-    elements.notesInput.value = recipe.notes || "";
-    state.formIngredients = [...(recipe.ingredients || [])];
-    state.formSteps = [...(recipe.instructions || [])];
-    renderFormItems();
+    syncStateToInputs();
   }
-
   openDialog(elements.formModal);
 }
 
+// --- CORE API & SAVING ---
 async function loadRecipes() {
   const url = hasApiUrl() ? API_URL : FALLBACK_URL;
   const response = await fetch(url, { headers: { Accept: "application/json" } });
-
-  if (!response.ok) {
-    throw new Error(`Could not load recipes (${response.status})`);
-  }
-
+  if (!response.ok) throw new Error(`Could not load recipes (${response.status})`);
   state.recipes = await response.json();
   state.usingFallback = !hasApiUrl();
 
   if (state.selectedRecipeId) {
     const selectedRecipe = getSelectedRecipe();
-    if (selectedRecipe) {
-      renderSelectedRecipe(selectedRecipe);
-    } else {
-      showTableOfContents();
-    }
+    if (selectedRecipe) renderSelectedRecipe(selectedRecipe);
+    else showTableOfContents();
   }
-
   renderRecipes();
 }
 
@@ -444,7 +418,6 @@ async function saveRecipes(nextRecipes) {
     renderRecipes();
     return;
   }
-
   setLoading(true);
   try {
     const response = await fetch(API_URL, {
@@ -452,11 +425,7 @@ async function saveRecipes(nextRecipes) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(nextRecipes),
     });
-
-    if (!response.ok) {
-      throw new Error(`Could not save recipes (${response.status})`);
-    }
-
+    if (!response.ok) throw new Error(`Could not save recipes (${response.status})`);
     state.recipes = nextRecipes;
     renderRecipes();
   } finally {
@@ -465,30 +434,28 @@ async function saveRecipes(nextRecipes) {
 }
 
 function buildRecipeFromForm() {
+  syncInputsToState();
   return {
     id: state.editingRecipeId || Date.now(),
-    title: elements.titleInput.value.trim(),
+    title: state.formTitle.en || state.formTitle.gu,
+    title_gu: state.formTitle.gu,
     tags: normalizeTags(elements.tagsInput.value),
     photo: elements.photoInput ? elements.photoInput.value.trim() : "",
     time: elements.timeInput.value.trim(),
-    ingredients: [...state.formIngredients],
-    instructions: [...state.formSteps],
+    ingredients: [...state.formIngredients.en],
+    ingredients_gu: [...state.formIngredients.gu],
+    instructions: [...state.formSteps.en],
+    instructions_gu: [...state.formSteps.gu],
     notes: elements.notesInput.value.trim(),
   };
 }
 
 async function handleSubmit(event) {
   event.preventDefault();
+  syncInputsToState();
 
-  if (!state.formIngredients.length) {
+  if (!state.formIngredients[state.formLang].length && !state.formIngredients[state.formLang === 'en' ? 'gu' : 'en'].length) {
     reportIssue("Add at least one ingredient.");
-    elements.ingredientInput.focus();
-    return;
-  }
-
-  if (!state.formSteps.length) {
-    reportIssue("Add at least one step.");
-    elements.stepInput.focus();
     return;
   }
 
@@ -503,199 +470,30 @@ async function handleSubmit(event) {
   flipToRecipe(recipe);
 }
 
-async function handleDelete() {
-  const recipe = getSelectedRecipe();
-
-  if (!recipe || !confirm(`Delete "${recipe.title}"?`)) {
-    return;
-  }
-
-  const nextRecipes = state.recipes.filter((item) => String(item.id) !== String(recipe.id));
-  await saveRecipes(nextRecipes);
-  flipToContents();
-}
-
-elements.addRecipeButton.addEventListener("click", () => openForm());
-elements.addIngredientButton.addEventListener("click", () => addFormItem("ingredient"));
-elements.addStepButton.addEventListener("click", () => addFormItem("step"));
-elements.ingredientInput.addEventListener("keydown", (event) => {
-  if (event.key === "Enter") {
-    event.preventDefault();
-    addFormItem("ingredient");
-  }
-});
-elements.stepInput.addEventListener("keydown", (event) => {
-  if (event.key === "Enter") {
-    event.preventDefault();
-    addFormItem("step");
-  }
-});
-
-function processImageFile(file) {
-  if (!file) return;
-
-  const reader = new FileReader();
-  reader.onload = (event) => {
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement("canvas");
-      const MAX_WIDTH = 1200;
-      let width = img.width;
-      let height = img.height;
-
-      if (width > MAX_WIDTH) {
-        height = Math.floor((height * MAX_WIDTH) / width);
-        width = MAX_WIDTH;
-      }
-
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext("2d");
-      ctx.drawImage(img, 0, 0, width, height);
-
-      const dataUrl = canvas.toDataURL("image/jpeg", 0.75);
-      
-      if (elements.photoInput) elements.photoInput.value = dataUrl;
-      if (elements.photoPreviewContainer) {
-        elements.photoPreviewContainer.style.backgroundImage = `url("${dataUrl}")`;
-        if (elements.photoPlaceholderText) elements.photoPlaceholderText.hidden = true;
-      }
-    };
-    img.src = event.target.result;
-  };
-  reader.readAsDataURL(file);
-}
-
-elements.photoPreviewContainer?.addEventListener("click", () => {
-  elements.photoFileInput?.click();
-});
-
-elements.photoFileInput?.addEventListener("change", (event) => {
-  const file = event.target.files[0];
-  if (file) {
-    processImageFile(file);
-  }
-});
-
-elements.cancelFormButton.addEventListener("click", () => closeDialog(elements.formModal));
-elements.backToContentsButton.addEventListener("click", flipToContents);
-elements.deleteRecipeButton.addEventListener("click", handleDelete);
-elements.editRecipeButton.addEventListener("click", () => openForm(getSelectedRecipe()));
-
-function flashButton(button, text) {
-  const original = button.textContent;
-  button.textContent = text;
-  setTimeout(() => { button.textContent = original; }, 1500);
-}
-
-elements.shareLinkButton?.addEventListener("click", () => {
-  const recipe = getSelectedRecipe();
-  if (!recipe) return;
-  const url = `${window.location.origin}${window.location.pathname}#recipe-${encodeURIComponent(recipe.id)}`;
-  navigator.clipboard.writeText(url).then(() => {
-    flashButton(elements.shareLinkButton, "✓ Copied!");
-  }).catch(() => {
-    prompt("Copy this link:", url);
-  });
-});
-
-elements.shareRecipeButton?.addEventListener("click", () => {
-  const recipe = getSelectedRecipe();
-  if (!recipe) return;
-  let text = `🍽️ ${recipe.title}\n`;
-  if (recipe.time) text += `⏱️ ${recipe.time}\n`;
-  if (recipe.tags?.length) text += `🏷️ ${recipe.tags.join(", ")}\n`;
-  text += `\n📝 Ingredients:\n`;
-  (recipe.ingredients || []).forEach(i => { text += `• ${i}\n`; });
-  text += `\n👩‍🍳 Steps:\n`;
-  (recipe.instructions || []).forEach((s, idx) => { text += `${idx + 1}. ${s}\n`; });
-  if (recipe.notes) text += `\n📌 Notes: ${recipe.notes}\n`;
-  text += `\n— From our Recipe Book`;
-  navigator.clipboard.writeText(text).then(() => {
-    flashButton(elements.shareRecipeButton, "✓ Copied!");
-  }).catch(() => {
-    prompt("Copy this recipe:", text);
-  });
-});
-
-function setLoading(on) {
-  state.isSaving = on;
-  if (elements.loadingOverlay) {
-    elements.loadingOverlay.hidden = !on;
-  }
-  if (elements.saveButton) {
-    elements.saveButton.disabled = on;
-    elements.saveButton.textContent = on ? "Saving…" : "Save";
-  }
-}
-
-window.addEventListener("popstate", () => {
-  const hash = window.location.hash;
-  if (hash.startsWith("#recipe-")) {
-    const id = decodeURIComponent(hash.replace("#recipe-", ""));
-    const recipe = state.recipes.find(r => String(r.id) === String(id));
-    if (recipe) {
-      flipToRecipe(recipe, false);
-      return;
-    }
-  }
-  showTableOfContents();
-});
-
-function navigateToHashRecipe() {
-  const hash = window.location.hash;
-  if (hash.startsWith("#recipe-")) {
-    const id = decodeURIComponent(hash.replace("#recipe-", ""));
-    const recipe = state.recipes.find(r => String(r.id) === String(id));
-    if (recipe) {
-      flipToRecipe(recipe, false);
-    }
-  }
-}
-
-elements.form.addEventListener("submit", handleSubmit);
-elements.refreshButton.addEventListener("click", () => loadRecipes().catch((error) => reportIssue(error.message)));
-elements.searchInput.addEventListener("input", () => {
-  renderRecipes();
-  if (state.selectedRecipeId && !getFilteredRecipes().some((recipe) => String(recipe.id) === String(state.selectedRecipeId))) {
-    showTableOfContents();
-  } else if (!state.selectedRecipeId) {
-    showTableOfContents();
-  }
-});
-elements.tocTabs?.addEventListener("click", (event) => {
-  if (event.target.classList.contains("tab")) {
-    state.activeTab = event.target.dataset.tag;
-    renderRecipes();
-  }
-});
-elements.recipeList.addEventListener("click", (event) => {
-  const item = event.target.closest(".toc-recipe");
-  if (!item) return;
-  const recipe = state.recipes.find((entry) => String(entry.id) === String(item.dataset.id));
-  if (recipe) flipToRecipe(recipe);
-});
-
-// --- AI & Dictation Logic (Proxy through Worker) ---
+// --- AI & DICTATION UI INTEGRATION ---
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 const recognition = SpeechRecognition ? new SpeechRecognition() : null;
 
 if (recognition) {
   recognition.continuous = false;
-  recognition.interimResults = false;
+  recognition.interimResults = true; // Allows live text preview
 
   elements.dictateButton?.addEventListener("click", () => {
-    recognition.lang = elements.dictationLang.value;
+    recognition.lang = "en-US"; // Dictate in English by default, AI will parse and translate.
     recognition.start();
-    elements.dictationStatus.textContent = "Listening... (Speak your recipe now)";
+    elements.dictationStatus.textContent = "Listening... 🎤";
     elements.dictationStatus.hidden = false;
     elements.dictateButton.disabled = true;
   });
 
-  recognition.onresult = async (event) => {
-    const transcript = event.results[0][0].transcript;
-    elements.dictationStatus.textContent = "Parsing with AI...";
-    await parseRecipeWithGemini(transcript);
+  recognition.onresult = (event) => {
+    const transcript = Array.from(event.results).map(r => r[0].transcript).join("");
+    elements.dictationStatus.textContent = `🎤 "${transcript}"`;
+    
+    if (event.results[0].isFinal) {
+      elements.dictationStatus.textContent = "✨ Parsing and Translating with AI...";
+      parseRecipeWithGemini(transcript);
+    }
   };
 
   recognition.onerror = (event) => {
@@ -704,48 +502,44 @@ if (recognition) {
     setTimeout(() => { elements.dictationStatus.hidden = true; }, 3000);
   };
 
-  recognition.onend = () => {
-    elements.dictateButton.disabled = false;
-  };
-} else if (elements.dictateButton) {
-  elements.dictateButton.style.display = "none";
-  console.warn("Web Speech API is not supported in this browser.");
+  recognition.onend = () => { elements.dictateButton.disabled = false; };
 }
 
 async function callGeminiAPI(promptText) {
-  const url = `${API_URL}/api/ai`; 
-  
-  const response = await fetch(url, {
+  const response = await fetch(`${API_URL}/api/ai`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ prompt: promptText })
   });
-
   if (!response.ok) throw new Error("Failed to communicate with the server.");
-  
   return await response.json();
 }
 
 async function parseRecipeWithGemini(spokenText) {
   try {
     const prompt = `
-      You are an expert culinary assistant. Parse the following spoken text into a structured recipe. 
-      Return ONLY a raw JSON object with the following keys:
-      - "title": string (infer a good title if not explicitly stated)
-      - "ingredients": array of strings (standardize measurements if possible)
-      - "instructions": array of strings (chronological steps)
-      
+      Parse this recipe. Return a JSON object containing BOTH English and Gujarati translations simultaneously.
+      Structure MUST exactly match:
+      {
+        "en": { "title": "...", "ingredients": ["..."], "instructions": ["..."] },
+        "gu": { "title": "...", "ingredients": ["..."], "instructions": ["..."] }
+      }
       Spoken text: "${spokenText}"
     `;
 
     const parsedData = await callGeminiAPI(prompt);
     
-    elements.titleInput.value = parsedData.title || elements.titleInput.value;
-    state.formIngredients = parsedData.ingredients || state.formIngredients;
-    state.formSteps = parsedData.instructions || state.formSteps;
-    renderFormItems();
+    state.formTitle.en = parsedData.en.title || state.formTitle.en;
+    state.formIngredients.en = parsedData.en.ingredients || state.formIngredients.en;
+    state.formSteps.en = parsedData.en.instructions || state.formSteps.en;
+
+    state.formTitle.gu = parsedData.gu.title || state.formTitle.gu;
+    state.formIngredients.gu = parsedData.gu.ingredients || state.formIngredients.gu;
+    state.formSteps.gu = parsedData.gu.instructions || state.formSteps.gu;
+
+    syncStateToInputs();
     
-    elements.dictationStatus.textContent = "✨ Recipe loaded successfully!";
+    elements.dictationStatus.textContent = "✨ Recipe loaded in both languages!";
     setTimeout(() => { elements.dictationStatus.hidden = true; }, 3000);
   } catch (error) {
     elements.dictationStatus.textContent = "Error parsing recipe. Try again.";
@@ -753,44 +547,109 @@ async function parseRecipeWithGemini(spokenText) {
   }
 }
 
+// UI Flip and Manual Translation Toggle
 elements.translateButton?.addEventListener("click", async () => {
-  const currentRecipe = {
-    title: elements.titleInput.value,
-    ingredients: state.formIngredients,
-    instructions: state.formSteps
-  };
+  syncInputsToState();
+  const targetLang = state.formLang === 'en' ? 'gu' : 'en';
+  
+  // If the target language is completely empty, fetch a translation from Gemini first
+  if (!state.formTitle[targetLang] && state.formIngredients[targetLang].length === 0) {
+    elements.dictationStatus.textContent = `Translating to ${targetLang === 'gu' ? 'Gujarati' : 'English'}...`;
+    elements.dictationStatus.hidden = false;
+    elements.translateButton.disabled = true;
 
-  elements.dictationStatus.textContent = "Translating to Gujarati...";
-  elements.dictationStatus.hidden = false;
-  elements.translateButton.disabled = true;
-
-  try {
-    const prompt = `
-      Translate the following recipe object flawlessly into Gujarati. 
-      Keep the exact same JSON structure. Return ONLY valid JSON.
+    try {
+      const currentRecipe = {
+        title: state.formTitle[state.formLang],
+        ingredients: state.formIngredients[state.formLang],
+        instructions: state.formSteps[state.formLang]
+      };
       
-      ${JSON.stringify(currentRecipe)}
-    `;
+      const prompt = `Translate this JSON object into ${targetLang === 'gu' ? 'Gujarati' : 'English'}. Keep structure exact: ${JSON.stringify(currentRecipe)}`;
+      const translatedData = await callGeminiAPI(prompt);
+      
+      state.formTitle[targetLang] = translatedData.title;
+      state.formIngredients[targetLang] = translatedData.ingredients;
+      state.formSteps[targetLang] = translatedData.instructions;
+    } catch (error) {
+      elements.dictationStatus.textContent = "Translation failed.";
+      elements.translateButton.disabled = false;
+      return;
+    }
+  }
 
-    const translatedData = await callGeminiAPI(prompt);
-    
-    elements.titleInput.value = translatedData.title || elements.titleInput.value;
-    state.formIngredients = translatedData.ingredients || state.formIngredients;
-    state.formSteps = translatedData.instructions || state.formSteps;
-    renderFormItems();
+  // Perform the UI Flip
+  state.formLang = targetLang;
+  elements.translateButton.textContent = state.formLang === 'en' ? '🌐 Translate to Gujarati' : '🌐 Translate to English';
+  syncStateToInputs();
+  
+  elements.dictationStatus.textContent = `✨ Switched to ${state.formLang === 'gu' ? 'Gujarati' : 'English'}`;
+  elements.dictationStatus.hidden = false;
+  elements.translateButton.disabled = false;
+  setTimeout(() => { elements.dictationStatus.hidden = true; }, 3000);
+});
 
-    elements.dictationStatus.textContent = "🌐 Translated successfully!";
-  } catch (error) {
-    elements.dictationStatus.textContent = "Translation failed.";
-    console.error(error);
-  } finally {
-    setTimeout(() => { elements.dictationStatus.hidden = true; }, 3000);
-    elements.translateButton.disabled = false;
+// --- BOILERPLATE EVENT LISTENERS ---
+elements.addRecipeButton.addEventListener("click", () => openForm());
+elements.cancelFormButton.addEventListener("click", () => closeDialog(elements.formModal));
+elements.backToContentsButton.addEventListener("click", flipToContents);
+elements.deleteRecipeButton.addEventListener("click", handleDelete);
+elements.editRecipeButton.addEventListener("click", () => openForm(getSelectedRecipe()));
+elements.form.addEventListener("submit", handleSubmit);
+elements.refreshButton.addEventListener("click", () => loadRecipes().catch((error) => reportIssue(error.message)));
+
+elements.photoPreviewContainer?.addEventListener("click", () => elements.photoFileInput?.click());
+elements.photoFileInput?.addEventListener("change", (event) => {
+  const file = event.target.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const MAX_WIDTH = 1200;
+        let width = img.width;
+        let height = img.height;
+        if (width > MAX_WIDTH) { height = Math.floor((height * MAX_WIDTH) / width); width = MAX_WIDTH; }
+        canvas.width = width; canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.75);
+        if (elements.photoInput) elements.photoInput.value = dataUrl;
+        if (elements.photoPreviewContainer) {
+          elements.photoPreviewContainer.style.backgroundImage = `url("${dataUrl}")`;
+          if (elements.photoPlaceholderText) elements.photoPlaceholderText.hidden = true;
+        }
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
   }
 });
 
+function setLoading(on) {
+  state.isSaving = on;
+  if (elements.loadingOverlay) elements.loadingOverlay.hidden = !on;
+  if (elements.saveButton) { elements.saveButton.disabled = on; elements.saveButton.textContent = on ? "Saving…" : "Save"; }
+}
+
+window.addEventListener("popstate", () => {
+  const hash = window.location.hash;
+  if (hash.startsWith("#recipe-")) {
+    const id = decodeURIComponent(hash.replace("#recipe-", ""));
+    const recipe = state.recipes.find(r => String(r.id) === String(id));
+    if (recipe) { flipToRecipe(recipe, false); return; }
+  }
+  showTableOfContents();
+});
+
 loadRecipes().then(() => {
-  navigateToHashRecipe();
+  const hash = window.location.hash;
+  if (hash.startsWith("#recipe-")) {
+    const id = decodeURIComponent(hash.replace("#recipe-", ""));
+    const recipe = state.recipes.find(r => String(r.id) === String(id));
+    if (recipe) flipToRecipe(recipe, false);
+  }
 }).catch((error) => {
   reportIssue(error.message);
   elements.emptyState.hidden = false;
