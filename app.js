@@ -10,6 +10,7 @@ const state = {
   usingFallback: false,
   activeTab: "all",
   isSaving: false,
+  geminiApiKey: localStorage.getItem("geminiApiKey") || "",
 };
 
 const elements = {
@@ -57,6 +58,17 @@ const elements = {
   tocTabs: document.querySelector("#tocTabs"),
   saveButton: document.querySelector("#saveButton"),
   loadingOverlay: document.querySelector("#loadingOverlay"),
+  
+  // New Elements for Settings & AI
+  settingsButton: document.querySelector("#settingsButton"),
+  settingsModal: document.querySelector("#settingsModal"),
+  closeSettingsButton: document.querySelector("#closeSettingsButton"),
+  saveSettingsButton: document.querySelector("#saveSettingsButton"),
+  apiKeyInput: document.querySelector("#apiKeyInput"),
+  dictateButton: document.querySelector("#dictateButton"),
+  translateButton: document.querySelector("#translateButton"),
+  dictationLang: document.querySelector("#dictationLang"),
+  dictationStatus: document.querySelector("#dictationStatus"),
 };
 
 function hasApiUrl() {
@@ -166,7 +178,6 @@ function renderRecipes() {
 
 function openDialog(dialog) {
   if (!dialog.open) {
-    // Safari polyfill: dialog may not support showModal natively on older iOS
     if (typeof dialog.showModal === "function") {
       dialog.showModal();
     } else {
@@ -260,18 +271,83 @@ function showTableOfContents() {
   renderRecipes();
 }
 
+// --- Drag & Drop / Edit List Logic ---
+let draggedItemInfo = null;
+
 function renderItemList(listElement, items, type) {
   listElement.innerHTML = items
     .map(
       (item, index) => `
-        <li class="item-row">
-          <span>${escapeHtml(item)}</span>
-          <button type="button" data-type="${type}" data-index="${index}">Remove</button>
+        <li class="item-row" draggable="true" data-type="${type}" data-index="${index}" style="display: flex; gap: 10px; align-items: center; cursor: grab; padding: 4px 0;">
+          <span class="drag-handle" style="color: #888; cursor: grab; user-select: none;" title="Drag to reorder">≡</span>
+          <span style="flex-grow: 1;">${escapeHtml(item)}</span>
+          <button class="secondary-button small" type="button" data-action="edit" data-type="${type}" data-index="${index}" title="Edit item" style="padding: 2px 6px;">✏️</button>
+          <button class="danger-button small" type="button" data-action="remove" data-type="${type}" data-index="${index}" title="Remove item" style="padding: 2px 6px;">❌</button>
         </li>
       `,
     )
     .join("");
 }
+
+function handleListAction(event) {
+  const button = event.target.closest("button[data-action]");
+  if (!button) return;
+
+  const action = button.dataset.action;
+  const type = button.dataset.type;
+  const index = Number(button.dataset.index);
+
+  if (action === "remove") {
+    removeFormItem(type, index);
+  } else if (action === "edit") {
+    const list = type === "ingredient" ? state.formIngredients : state.formSteps;
+    const input = type === "ingredient" ? elements.ingredientInput : elements.stepInput;
+    
+    input.value = list[index];
+    removeFormItem(type, index);
+    input.focus();
+  }
+}
+
+function setupDragAndDrop(listElement) {
+  listElement.addEventListener("dragstart", (e) => {
+    const li = e.target.closest("li");
+    if (!li) return;
+    draggedItemInfo = { type: li.dataset.type, index: Number(li.dataset.index) };
+    e.dataTransfer.effectAllowed = "move";
+    li.style.opacity = "0.5";
+  });
+
+  listElement.addEventListener("dragover", (e) => {
+    e.preventDefault(); 
+    e.dataTransfer.dropEffect = "move";
+  });
+
+  listElement.addEventListener("drop", (e) => {
+    e.preventDefault();
+    const targetLi = e.target.closest("li");
+    if (!targetLi || !draggedItemInfo) return;
+
+    const targetIndex = Number(targetLi.dataset.index);
+    const list = draggedItemInfo.type === "ingredient" ? state.formIngredients : state.formSteps;
+    
+    const [movedItem] = list.splice(draggedItemInfo.index, 1);
+    list.splice(targetIndex, 0, movedItem);
+    
+    renderFormItems();
+    draggedItemInfo = null;
+  });
+
+  listElement.addEventListener("dragend", (e) => {
+    if (e.target.closest("li")) e.target.closest("li").style.opacity = "1";
+  });
+}
+
+elements.ingredientsList.addEventListener("click", handleListAction);
+elements.stepsList.addEventListener("click", handleListAction);
+setupDragAndDrop(elements.ingredientsList);
+setupDragAndDrop(elements.stepsList);
+// -------------------------------------
 
 function renderFormItems() {
   renderItemList(elements.ingredientsList, state.formIngredients, "ingredient");
@@ -304,7 +380,6 @@ function removeFormItem(type, index) {
   } else {
     state.formSteps.splice(index, 1);
   }
-
   renderFormItems();
 }
 
@@ -508,20 +583,6 @@ elements.photoFileInput?.addEventListener("change", (event) => {
   }
 });
 
-elements.ingredientsList.addEventListener("click", (event) => {
-  const button = event.target.closest("button[data-type]");
-
-  if (button) {
-    removeFormItem(button.dataset.type, Number(button.dataset.index));
-  }
-});
-elements.stepsList.addEventListener("click", (event) => {
-  const button = event.target.closest("button[data-type]");
-
-  if (button) {
-    removeFormItem(button.dataset.type, Number(button.dataset.index));
-  }
-});
 elements.cancelFormButton.addEventListener("click", () => closeDialog(elements.formModal));
 elements.backToContentsButton.addEventListener("click", flipToContents);
 elements.deleteRecipeButton.addEventListener("click", handleDelete);
@@ -540,7 +601,6 @@ elements.shareLinkButton?.addEventListener("click", () => {
   navigator.clipboard.writeText(url).then(() => {
     flashButton(elements.shareLinkButton, "✓ Copied!");
   }).catch(() => {
-    // Safari clipboard fallback
     prompt("Copy this link:", url);
   });
 });
@@ -560,7 +620,6 @@ elements.shareRecipeButton?.addEventListener("click", () => {
   navigator.clipboard.writeText(text).then(() => {
     flashButton(elements.shareRecipeButton, "✓ Copied!");
   }).catch(() => {
-    // Safari fallback
     prompt("Copy this recipe:", text);
   });
 });
@@ -576,7 +635,6 @@ function setLoading(on) {
   }
 }
 
-// Handle browser back/forward navigation
 window.addEventListener("popstate", () => {
   const hash = window.location.hash;
   if (hash.startsWith("#recipe-")) {
@@ -600,6 +658,7 @@ function navigateToHashRecipe() {
     }
   }
 }
+
 elements.form.addEventListener("submit", handleSubmit);
 elements.refreshButton.addEventListener("click", () => loadRecipes().catch((error) => reportIssue(error.message)));
 elements.searchInput.addEventListener("input", () => {
@@ -618,15 +677,156 @@ elements.tocTabs?.addEventListener("click", (event) => {
 });
 elements.recipeList.addEventListener("click", (event) => {
   const item = event.target.closest(".toc-recipe");
-
-  if (!item) {
-    return;
-  }
-
+  if (!item) return;
   const recipe = state.recipes.find((entry) => String(entry.id) === String(item.dataset.id));
+  if (recipe) flipToRecipe(recipe);
+});
 
-  if (recipe) {
-    flipToRecipe(recipe);
+// --- Settings & API Key Logic ---
+elements.settingsButton?.addEventListener("click", () => {
+  elements.apiKeyInput.value = state.geminiApiKey || "";
+  openDialog(elements.settingsModal);
+});
+
+elements.closeSettingsButton?.addEventListener("click", () => {
+  closeDialog(elements.settingsModal);
+});
+
+elements.saveSettingsButton?.addEventListener("click", () => {
+  const key = elements.apiKeyInput.value.trim();
+  localStorage.setItem("geminiApiKey", key);
+  state.geminiApiKey = key;
+  if (elements.translateButton) {
+    elements.translateButton.disabled = !key;
+  }
+  closeDialog(elements.settingsModal);
+});
+
+if (elements.translateButton) {
+  elements.translateButton.disabled = !state.geminiApiKey;
+}
+
+// --- AI & Dictation Logic ---
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+const recognition = SpeechRecognition ? new SpeechRecognition() : null;
+
+if (recognition) {
+  recognition.continuous = false;
+  recognition.interimResults = false;
+
+  elements.dictateButton?.addEventListener("click", () => {
+    if (!state.geminiApiKey) {
+      alert("Please add your Gemini API key in Settings first.");
+      openDialog(elements.settingsModal);
+      return;
+    }
+    recognition.lang = elements.dictationLang.value;
+    recognition.start();
+    elements.dictationStatus.textContent = "Listening... (Speak your recipe now)";
+    elements.dictationStatus.hidden = false;
+    elements.dictateButton.disabled = true;
+  });
+
+  recognition.onresult = async (event) => {
+    const transcript = event.results[0][0].transcript;
+    elements.dictationStatus.textContent = "Parsing with AI...";
+    await parseRecipeWithGemini(transcript);
+  };
+
+  recognition.onerror = (event) => {
+    elements.dictationStatus.textContent = `Speech recognition error: ${event.error}`;
+    elements.dictateButton.disabled = false;
+    setTimeout(() => { elements.dictationStatus.hidden = true; }, 3000);
+  };
+
+  recognition.onend = () => {
+    elements.dictateButton.disabled = false;
+  };
+} else if (elements.dictateButton) {
+  elements.dictateButton.style.display = "none";
+  console.warn("Web Speech API is not supported in this browser.");
+}
+
+async function callGeminiAPI(promptText) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${state.geminiApiKey}`;
+  
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: promptText }] }],
+      generationConfig: { response_mime_type: "application/json" }
+    })
+  });
+
+  if (!response.ok) throw new Error("Failed to communicate with AI.");
+  
+  const data = await response.json();
+  return JSON.parse(data.candidates[0].content.parts[0].text);
+}
+
+async function parseRecipeWithGemini(spokenText) {
+  try {
+    const prompt = `
+      You are an expert culinary assistant. Parse the following spoken text into a structured recipe. 
+      Return ONLY a raw JSON object with the following keys:
+      - "title": string (infer a good title if not explicitly stated)
+      - "ingredients": array of strings (standardize measurements if possible)
+      - "instructions": array of strings (chronological steps)
+      
+      Spoken text: "${spokenText}"
+    `;
+
+    const parsedData = await callGeminiAPI(prompt);
+    
+    elements.titleInput.value = parsedData.title || elements.titleInput.value;
+    state.formIngredients = parsedData.ingredients || state.formIngredients;
+    state.formSteps = parsedData.instructions || state.formSteps;
+    renderFormItems();
+    
+    elements.dictationStatus.textContent = "✨ Recipe loaded successfully!";
+    setTimeout(() => { elements.dictationStatus.hidden = true; }, 3000);
+  } catch (error) {
+    elements.dictationStatus.textContent = "Error parsing recipe. Check API key or try again.";
+    console.error(error);
+  }
+}
+
+elements.translateButton?.addEventListener("click", async () => {
+  if (!state.geminiApiKey) return;
+  
+  const currentRecipe = {
+    title: elements.titleInput.value,
+    ingredients: state.formIngredients,
+    instructions: state.formSteps
+  };
+
+  elements.dictationStatus.textContent = "Translating to Gujarati...";
+  elements.dictationStatus.hidden = false;
+  elements.translateButton.disabled = true;
+
+  try {
+    const prompt = `
+      Translate the following recipe object flawlessly into Gujarati. 
+      Keep the exact same JSON structure. Return ONLY valid JSON.
+      
+      ${JSON.stringify(currentRecipe)}
+    `;
+
+    const translatedData = await callGeminiAPI(prompt);
+    
+    elements.titleInput.value = translatedData.title || elements.titleInput.value;
+    state.formIngredients = translatedData.ingredients || state.formIngredients;
+    state.formSteps = translatedData.instructions || state.formSteps;
+    renderFormItems();
+
+    elements.dictationStatus.textContent = "🌐 Translated successfully!";
+  } catch (error) {
+    elements.dictationStatus.textContent = "Translation failed.";
+    console.error(error);
+  } finally {
+    setTimeout(() => { elements.dictationStatus.hidden = true; }, 3000);
+    elements.translateButton.disabled = false;
   }
 });
 
