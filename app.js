@@ -6,7 +6,6 @@ const state = {
   selectedRecipeId: null,
   editingRecipeId: null,
   
-  // Dual-Language State
   formTitle: { en: "", gu: "" },
   formIngredients: { en: [], gu: [] },
   formSteps: { en: [], gu: [] },
@@ -63,63 +62,43 @@ const elements = {
   tocTabs: document.querySelector("#tocTabs"),
   saveButton: document.querySelector("#saveButton"),
   loadingOverlay: document.querySelector("#loadingOverlay"),
-  
-  // AI Elements
   dictateButton: document.querySelector("#dictateButton"),
   translateButton: document.querySelector("#translateButton"),
   viewTranslateButton: document.querySelector("#viewTranslateButton"),
   dictationStatus: document.querySelector("#dictationStatus"),
 };
 
-function hasApiUrl() {
-  return API_URL && !API_URL.includes("<subdomain>");
-}
+function hasApiUrl() { return API_URL && !API_URL.includes("<subdomain>"); }
 
 function escapeHtml(value) {
-  return String(value ?? "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
+  return String(value ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;");
 }
 
-function normalizeTags(value) {
-  return value.split(",").map((item) => item.trim()).filter(Boolean);
-}
+function normalizeTags(value) { return value.split(",").map((item) => item.trim()).filter(Boolean); }
 
 function getFilteredRecipes() {
   const query = elements.searchInput.value.trim().toLowerCase();
   let filtered = state.recipes;
-
   if (state.activeTab !== "all") {
     filtered = filtered.filter(recipe => (recipe.tags || []).includes(state.activeTab));
   }
-
   if (!query) return [...filtered].sort((a, b) => a.title.localeCompare(b.title));
 
   return filtered.filter((recipe) => {
     const searchable = [
       recipe.title, recipe.title_gu, recipe.time, recipe.notes,
-      ...(recipe.tags || []),
-      ...(recipe.ingredients || []), ...(recipe.ingredients_gu || []),
-      ...(recipe.instructions || []), ...(recipe.instructions_gu || [])
+      ...(recipe.tags || []), ...(recipe.ingredients || []), ...(recipe.ingredients_gu || []), ...(recipe.instructions || []), ...(recipe.instructions_gu || [])
     ].join(" ").toLowerCase();
     return searchable.includes(query);
   }).sort((a, b) => a.title.localeCompare(b.title));
 }
 
-function renderTags(tags = []) {
-  return tags.map((tag) => `<span class="tag">${escapeHtml(tag)}</span>`).join("");
-}
+function renderTags(tags = []) { return tags.map((tag) => `<span class="tag">${escapeHtml(tag)}</span>`).join(""); }
 
 function renderTabs() {
   if (!elements.tocTabs) return;
   const tags = new Set();
-  state.recipes.forEach(recipe => {
-    (recipe.tags || []).forEach(tag => tags.add(tag));
-  });
-  
+  state.recipes.forEach(recipe => { (recipe.tags || []).forEach(tag => tags.add(tag)); });
   const sortedTags = Array.from(tags).sort();
   let html = `<button class="tab ${state.activeTab === 'all' ? 'is-active' : ''}" data-tag="all">All</button>`;
   sortedTags.forEach(tag => {
@@ -132,17 +111,14 @@ function renderRecipes() {
   const recipes = getFilteredRecipes();
   let currentLetter = "";
   let html = "";
-  
   recipes.forEach((recipe, index) => {
     const activeClass = String(recipe.id) === String(state.selectedRecipeId) ? " is-active" : "";
     const displayTitle = state.viewLang === 'gu' && recipe.title_gu ? recipe.title_gu : recipe.title;
     const firstLetter = displayTitle ? displayTitle.charAt(0).toUpperCase() : "?";
-    
     if (state.activeTab === "all" && firstLetter !== currentLetter) {
       currentLetter = firstLetter;
       html += `<div class="toc-divider">${escapeHtml(currentLetter)}</div>`;
     }
-
     html += `
       <button class="toc-recipe${activeClass}" type="button" data-id="${escapeHtml(recipe.id)}">
         <span class="toc-title">${escapeHtml(displayTitle)}</span>
@@ -151,43 +127,30 @@ function renderRecipes() {
       </button>
     `;
   });
-
   elements.recipeList.innerHTML = html;
   elements.emptyState.hidden = recipes.length > 0;
   renderTabs();
 }
 
 function openDialog(dialog) {
-  if (!dialog.open) {
-    if (typeof dialog.showModal === "function") dialog.showModal();
-    else dialog.setAttribute("open", "");
-  }
+  if (!dialog.open) { if (typeof dialog.showModal === "function") dialog.showModal(); else dialog.setAttribute("open", ""); }
 }
 
 function closeDialog(dialog) {
-  if (dialog.open) {
-    if (typeof dialog.close === "function") dialog.close();
-    else dialog.removeAttribute("open");
-  }
+  if (dialog.open) { if (typeof dialog.close === "function") dialog.close(); else dialog.removeAttribute("open"); }
 }
 
-function getSelectedRecipe() {
-  return state.recipes.find((recipe) => String(recipe.id) === String(state.selectedRecipeId));
-}
+function getSelectedRecipe() { return state.recipes.find((recipe) => String(recipe.id) === String(state.selectedRecipeId)); }
 
-function setListItems(element, items = []) {
-  element.innerHTML = items.map((item) => `<li>${escapeHtml(item)}</li>`).join("");
-}
+function setListItems(element, items = []) { element.innerHTML = items.map((item) => `<li>${escapeHtml(item)}</li>`).join(""); }
 
 function flipToRecipe(recipe, pushState = true) {
   state.selectedRecipeId = recipe.id;
   state.viewLang = 'en'; 
   if (pushState) history.pushState({ recipeId: recipe.id }, "", `#recipe-${recipe.id}`);
-  
   elements.pageTurner.classList.remove("is-flipping");
   void elements.pageTurner.offsetWidth;
   elements.pageTurner.classList.add("is-flipping");
-
   window.setTimeout(() => renderSelectedRecipe(recipe), 360);
   window.setTimeout(() => elements.pageTurner.classList.remove("is-flipping"), 750);
   renderRecipes();
@@ -238,7 +201,6 @@ function flipToContents() {
   elements.pageTurner.classList.remove("is-flipping");
   void elements.pageTurner.offsetWidth;
   elements.pageTurner.classList.add("is-flipping");
-
   window.setTimeout(() => showTableOfContents(), 360);
   window.setTimeout(() => elements.pageTurner.classList.remove("is-flipping"), 750);
 }
@@ -252,9 +214,7 @@ function showTableOfContents() {
   renderRecipes();
 }
 
-function syncInputsToState() {
-  state.formTitle[state.formLang] = elements.titleInput.value.trim();
-}
+function syncInputsToState() { state.formTitle[state.formLang] = elements.titleInput.value.trim(); }
 
 function syncStateToInputs() {
   elements.titleInput.value = state.formTitle[state.formLang] || "";
@@ -277,7 +237,6 @@ function renderItemList(listElement, items, type) {
 function handleListAction(event) {
   const button = event.target.closest("button[data-action]");
   if (!button) return;
-
   const action = button.dataset.action;
   const type = button.dataset.type;
   const index = Number(button.dataset.index);
@@ -310,15 +269,12 @@ function setupDragAndDrop(listElement) {
     if (!targetLi || !draggedItemInfo) return;
     const targetIndex = Number(targetLi.dataset.index);
     const list = draggedItemInfo.type === "ingredient" ? state.formIngredients[state.formLang] : state.formSteps[state.formLang];
-    
     const [movedItem] = list.splice(draggedItemInfo.index, 1);
     list.splice(targetIndex, 0, movedItem);
     renderFormItems();
     draggedItemInfo = null;
   });
-  listElement.addEventListener("dragend", (e) => {
-    if (e.target.closest("li")) e.target.closest("li").style.opacity = "1";
-  });
+  listElement.addEventListener("dragend", (e) => { if (e.target.closest("li")) e.target.closest("li").style.opacity = "1"; });
 }
 
 elements.ingredientsList.addEventListener("click", handleListAction);
@@ -335,10 +291,8 @@ function addFormItem(type) {
   const input = type === "ingredient" ? elements.ingredientInput : elements.stepInput;
   const value = input.value.trim();
   if (!value) { input.focus(); return; }
-
   if (type === "ingredient") state.formIngredients[state.formLang].push(value);
   else state.formSteps[state.formLang].push(value);
-
   input.value = "";
   input.focus();
   renderFormItems();
@@ -355,10 +309,8 @@ function resetForm() {
   state.formTitle = { en: "", gu: "" };
   state.formIngredients = { en: [], gu: [] };
   state.formSteps = { en: [], gu: [] };
-  
   elements.formTitle.textContent = "New Recipe";
   elements.translateButton.textContent = "🌐 Translate to Gujarati";
-  
   if (elements.photoPreviewContainer) {
     elements.photoPreviewContainer.style.backgroundImage = "none";
     if (elements.photoPlaceholderText) elements.photoPlaceholderText.hidden = false;
@@ -371,15 +323,12 @@ function openForm(recipe = null) {
   if (recipe) {
     state.editingRecipeId = recipe.id;
     elements.formTitle.textContent = "Update Recipe";
-    
     state.formTitle = { en: recipe.title || "", gu: recipe.title_gu || "" };
     state.formIngredients = { en: [...(recipe.ingredients || [])], gu: [...(recipe.ingredients_gu || [])] };
     state.formSteps = { en: [...(recipe.instructions || [])], gu: [...(recipe.instructions_gu || [])] };
-    
     elements.tagsInput.value = (recipe.tags || []).join(", ");
     elements.timeInput.value = recipe.time || "";
     elements.notesInput.value = recipe.notes || "";
-    
     if (elements.photoInput) {
       elements.photoInput.value = recipe.photo || "";
       if (recipe.photo && elements.photoPreviewContainer) {
@@ -399,7 +348,6 @@ async function loadRecipes() {
     if (!response.ok) throw new Error(`Could not load recipes (${response.status})`);
     state.recipes = await response.json();
     state.usingFallback = !hasApiUrl();
-
     if (state.selectedRecipeId) {
       const selectedRecipe = getSelectedRecipe();
       if (selectedRecipe) renderSelectedRecipe(selectedRecipe);
@@ -407,18 +355,13 @@ async function loadRecipes() {
     }
     renderRecipes();
   } catch (err) {
-    console.error("Failed to load recipes:", err);
     elements.emptyState.innerHTML = `<h2>Data Error</h2><p style="color:red;">${err.message}</p>`;
     elements.emptyState.hidden = false;
   }
 }
 
 async function saveRecipes(nextRecipes) {
-  if (!hasApiUrl()) {
-    state.recipes = nextRecipes;
-    renderRecipes();
-    return;
-  }
+  if (!hasApiUrl()) { state.recipes = nextRecipes; renderRecipes(); return; }
   setLoading(true);
   try {
     const response = await fetch(API_URL, {
@@ -429,9 +372,7 @@ async function saveRecipes(nextRecipes) {
     if (!response.ok) throw new Error(`Could not save recipes (${response.status})`);
     state.recipes = nextRecipes;
     renderRecipes();
-  } finally {
-    setLoading(false);
-  }
+  } finally { setLoading(false); }
 }
 
 function buildRecipeFromForm() {
@@ -454,30 +395,20 @@ function buildRecipeFromForm() {
 async function handleSubmit(event) {
   event.preventDefault();
   syncInputsToState();
-
   if (!state.formIngredients[state.formLang].length && !state.formIngredients[state.formLang === 'en' ? 'gu' : 'en'].length) {
-    alert("Add at least one ingredient.");
-    return;
+    alert("Add at least one ingredient."); return;
   }
-
   const recipe = buildRecipeFromForm();
-  const nextRecipes = state.editingRecipeId
-    ? state.recipes.map((item) => (String(item.id) === String(state.editingRecipeId) ? recipe : item))
-    : [...state.recipes, recipe];
-
+  const nextRecipes = state.editingRecipeId ? state.recipes.map((item) => (String(item.id) === String(state.editingRecipeId) ? recipe : item)) : [...state.recipes, recipe];
   await saveRecipes(nextRecipes);
   closeDialog(elements.formModal);
   resetForm();
   flipToRecipe(recipe);
 }
 
-// THIS WAS THE MISSING FUNCTION THAT BROKE EVERYTHING!
 async function handleDelete() {
   const recipe = getSelectedRecipe();
-  if (!recipe || !confirm(`Delete "${recipe.title || 'this recipe'}"?`)) {
-    return;
-  }
-
+  if (!recipe || !confirm(`Delete "${recipe.title || 'this recipe'}"?`)) return;
   const nextRecipes = state.recipes.filter((item) => String(item.id) !== String(recipe.id));
   await saveRecipes(nextRecipes);
   flipToContents();
@@ -489,7 +420,6 @@ const recognition = SpeechRecognition ? new SpeechRecognition() : null;
 if (recognition) {
   recognition.continuous = false;
   recognition.interimResults = true; 
-
   elements.dictateButton?.addEventListener("click", () => {
     recognition.lang = "en-US"; 
     recognition.start();
@@ -501,7 +431,6 @@ if (recognition) {
   recognition.onresult = (event) => {
     const transcript = Array.from(event.results).map(r => r[0].transcript).join("");
     elements.dictationStatus.textContent = `🎤 "${transcript}"`;
-    
     if (event.results[0].isFinal) {
       elements.dictationStatus.textContent = "✨ Parsing and Translating with AI...";
       parseRecipeWithGemini(transcript);
@@ -513,7 +442,6 @@ if (recognition) {
     elements.dictateButton.disabled = false;
     setTimeout(() => { elements.dictationStatus.hidden = true; }, 3000);
   };
-
   recognition.onend = () => { elements.dictateButton.disabled = false; };
 }
 
@@ -531,7 +459,11 @@ async function callGeminiAPI(promptText) {
 async function parseRecipeWithGemini(spokenText) {
   try {
     const prompt = `
-      Parse this recipe. Return a JSON object containing BOTH English and Gujarati translations simultaneously.
+      You are an expert chef. Analyze this spoken text. 
+      If it is completely irrelevant to food (e.g., "hello testing", "mike check"), return exactly this JSON:
+      {"en": {"title": "Unknown Input", "ingredients": [], "instructions": []}, "gu": {"title": "અજ્ઞાત ઇનપુટ", "ingredients": [], "instructions": []}}
+      
+      Otherwise, parse it into a recipe. Return a JSON object containing BOTH English and Gujarati translations simultaneously.
       Structure MUST exactly match:
       {
         "en": { "title": "...", "ingredients": ["..."], "instructions": ["..."] },
@@ -547,7 +479,6 @@ async function parseRecipeWithGemini(spokenText) {
       state.formIngredients.en = parsedData.en.ingredients || state.formIngredients.en;
       state.formSteps.en = parsedData.en.instructions || state.formSteps.en;
     }
-
     if (parsedData && parsedData.gu) {
       state.formTitle.gu = parsedData.gu.title || state.formTitle.gu;
       state.formIngredients.gu = parsedData.gu.ingredients || state.formIngredients.gu;
@@ -555,13 +486,11 @@ async function parseRecipeWithGemini(spokenText) {
     }
 
     syncStateToInputs();
-    
     elements.dictationStatus.textContent = "✨ Recipe loaded in both languages!";
     setTimeout(() => { elements.dictationStatus.hidden = true; }, 3000);
   } catch (error) {
-    elements.dictationStatus.textContent = `⚠️ Error: ${error.message}`;
+    elements.dictationStatus.textContent = `❌ ${error.message}`;
     console.error("AI Error:", error);
-    setTimeout(() => { elements.dictationStatus.hidden = true; }, 4000);
   }
 }
 
@@ -573,14 +502,8 @@ elements.translateButton?.addEventListener("click", async () => {
     elements.dictationStatus.textContent = `Translating to ${targetLang === 'gu' ? 'Gujarati' : 'English'}...`;
     elements.dictationStatus.hidden = false;
     elements.translateButton.disabled = true;
-
     try {
-      const currentRecipe = {
-        title: state.formTitle[state.formLang],
-        ingredients: state.formIngredients[state.formLang],
-        instructions: state.formSteps[state.formLang]
-      };
-      
+      const currentRecipe = { title: state.formTitle[state.formLang], ingredients: state.formIngredients[state.formLang], instructions: state.formSteps[state.formLang] };
       const prompt = `Translate this JSON object into ${targetLang === 'gu' ? 'Gujarati' : 'English'}. Keep structure exact: ${JSON.stringify(currentRecipe)}`;
       const translatedData = await callGeminiAPI(prompt);
       
@@ -588,7 +511,7 @@ elements.translateButton?.addEventListener("click", async () => {
       state.formIngredients[targetLang] = translatedData.ingredients;
       state.formSteps[targetLang] = translatedData.instructions;
     } catch (error) {
-      elements.dictationStatus.textContent = "Translation failed.";
+      elements.dictationStatus.textContent = `❌ ${error.message}`;
       elements.translateButton.disabled = false;
       return;
     }
@@ -597,7 +520,6 @@ elements.translateButton?.addEventListener("click", async () => {
   state.formLang = targetLang;
   elements.translateButton.textContent = state.formLang === 'en' ? '🌐 Translate to Gujarati' : '🌐 Translate to English';
   syncStateToInputs();
-  
   elements.dictationStatus.textContent = `✨ Switched to ${state.formLang === 'gu' ? 'Gujarati' : 'English'}`;
   elements.dictationStatus.hidden = false;
   elements.translateButton.disabled = false;
@@ -607,7 +529,7 @@ elements.translateButton?.addEventListener("click", async () => {
 elements.addRecipeButton.addEventListener("click", () => openForm());
 elements.cancelFormButton.addEventListener("click", () => closeDialog(elements.formModal));
 elements.backToContentsButton.addEventListener("click", flipToContents);
-elements.deleteRecipeButton.addEventListener("click", handleDelete); // Now works properly
+elements.deleteRecipeButton.addEventListener("click", handleDelete);
 elements.editRecipeButton.addEventListener("click", () => openForm(getSelectedRecipe()));
 elements.form.addEventListener("submit", handleSubmit);
 elements.refreshButton.addEventListener("click", () => loadRecipes());
@@ -646,16 +568,12 @@ function flashButton(button, text) {
   button.textContent = text;
   setTimeout(() => { button.textContent = original; }, 1500);
 }
-
 elements.shareLinkButton?.addEventListener("click", () => {
   const recipe = getSelectedRecipe();
   if (!recipe) return;
   const url = `${window.location.origin}${window.location.pathname}#recipe-${encodeURIComponent(recipe.id)}`;
-  navigator.clipboard.writeText(url).then(() => {
-    flashButton(elements.shareLinkButton, "✓ Copied!");
-  }).catch(() => prompt("Copy this link:", url));
+  navigator.clipboard.writeText(url).then(() => { flashButton(elements.shareLinkButton, "✓ Copied!"); }).catch(() => prompt("Copy this link:", url));
 });
-
 elements.shareRecipeButton?.addEventListener("click", () => {
   const recipe = getSelectedRecipe();
   if (!recipe) return;
@@ -668,38 +586,27 @@ elements.shareRecipeButton?.addEventListener("click", () => {
   (recipe.instructions || []).forEach((s, idx) => { text += `${idx + 1}. ${s}\n`; });
   if (recipe.notes) text += `\n📌 Notes: ${recipe.notes}\n`;
   text += `\n— From our Recipe Book`;
-  navigator.clipboard.writeText(text).then(() => {
-    flashButton(elements.shareRecipeButton, "✓ Copied!");
-  }).catch(() => prompt("Copy this recipe:", text));
+  navigator.clipboard.writeText(text).then(() => { flashButton(elements.shareRecipeButton, "✓ Copied!"); }).catch(() => prompt("Copy this recipe:", text));
 });
-
 function setLoading(on) {
   state.isSaving = on;
   if (elements.loadingOverlay) elements.loadingOverlay.hidden = !on;
   if (elements.saveButton) { elements.saveButton.disabled = on; elements.saveButton.textContent = on ? "Saving…" : "Save"; }
 }
-
 elements.searchInput.addEventListener("input", () => {
   renderRecipes();
-  if (state.selectedRecipeId && !getFilteredRecipes().some((recipe) => String(recipe.id) === String(state.selectedRecipeId))) {
-    showTableOfContents();
-  } else if (!state.selectedRecipeId) showTableOfContents();
+  if (state.selectedRecipeId && !getFilteredRecipes().some((recipe) => String(recipe.id) === String(state.selectedRecipeId))) showTableOfContents();
+  else if (!state.selectedRecipeId) showTableOfContents();
 });
-
 elements.tocTabs?.addEventListener("click", (event) => {
-  if (event.target.classList.contains("tab")) {
-    state.activeTab = event.target.dataset.tag;
-    renderRecipes();
-  }
+  if (event.target.classList.contains("tab")) { state.activeTab = event.target.dataset.tag; renderRecipes(); }
 });
-
 elements.recipeList.addEventListener("click", (event) => {
   const item = event.target.closest(".toc-recipe");
   if (!item) return;
   const recipe = state.recipes.find((entry) => String(entry.id) === String(item.dataset.id));
   if (recipe) flipToRecipe(recipe);
 });
-
 window.addEventListener("popstate", () => {
   const hash = window.location.hash;
   if (hash.startsWith("#recipe-")) {
@@ -709,8 +616,6 @@ window.addEventListener("popstate", () => {
   }
   showTableOfContents();
 });
-
-// Boot up
 loadRecipes().then(() => {
   const hash = window.location.hash;
   if (hash.startsWith("#recipe-")) {
