@@ -63,6 +63,7 @@
                 <div id="recipeMeta" class="recipe-meta"></div>
               </div>
               <div class="recipe-actions">
+                <button class="secondary-button small" id="viewTranslateButton" type="button" hidden>🌐 View in Gujarati</button>
                 <button class="secondary-button small" id="shareLinkButton" type="button" title="Copy link">📋 Link</button>
                 <button class="secondary-button small" id="shareRecipeButton" type="button" title="Copy recipe text">📤 Share</button>
                 <button class="primary-button small" id="editRecipeButton" type="button">Update</button>
@@ -98,15 +99,13 @@
         <button class="primary-button small" id="saveButton" type="submit">Save</button>
       </div>
 
-      <div class="ai-controls" style="display: flex; gap: 10px; padding: 0 20px; margin-bottom: 15px;">
-        <select id="dictationLang" style="padding: 5px; border-radius: 4px;">
-          <option value="en-US">English</option>
-          <option value="gu-IN">ગુજરાતી (Gujarati)</option>
-        </select>
-        <button class="secondary-button small" id="dictateButton" type="button">✨ Magic Dictation</button>
+      <div class="ai-controls" style="display: flex; gap: 10px; padding: 10px 20px; margin-bottom: 15px; flex-wrap: wrap;">
+        <button class="primary-button small" id="dictateButton" type="button" style="display: flex; gap: 6px; align-items: center;">
+          <span style="font-size: 1.1em;">🎙️</span> Magic Dictation
+        </button>
         <button class="secondary-button small" id="translateButton" type="button">🌐 Translate to Gujarati</button>
       </div>
-      <p id="dictationStatus" style="padding: 0 20px; font-size: 0.9em; color: #666;" hidden></p>
+      <p id="dictationStatus" style="padding: 0 20px; margin-top: -5px; margin-bottom: 15px; font-size: 0.9em; font-weight: 500; color: #2f6b57;" hidden></p>
 
       <div class="form-body">
         <div class="field-grid">
