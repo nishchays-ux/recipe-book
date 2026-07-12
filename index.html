@@ -50,7 +50,6 @@
 
             <div class="toc-actions">
               <button class="primary-button" id="addRecipeButton" type="button">Add Recipe</button>
-              <button class="secondary-button" id="settingsButton" type="button">⚙️ Settings</button>
               <button class="text-button" id="refreshButton" type="button">Refresh</button>
             </div>
           </article>
@@ -105,7 +104,7 @@
           <option value="gu-IN">ગુજરાતી (Gujarati)</option>
         </select>
         <button class="secondary-button small" id="dictateButton" type="button">✨ Magic Dictation</button>
-        <button class="secondary-button small" id="translateButton" type="button" disabled>🌐 Translate to Gujarati</button>
+        <button class="secondary-button small" id="translateButton" type="button">🌐 Translate to Gujarati</button>
       </div>
       <p id="dictationStatus" style="padding: 0 20px; font-size: 0.9em; color: #666;" hidden></p>
 
@@ -167,21 +166,6 @@
         </label>
       </div>
     </form>
-  </dialog>
-
-  <dialog class="modal" id="settingsModal">
-    <div class="modal-header">
-      <button class="text-button" id="closeSettingsButton" type="button">Cancel</button>
-      <h2>Settings</h2>
-      <button class="primary-button small" id="saveSettingsButton" type="button">Save</button>
-    </div>
-    <div class="form-body">
-      <label>
-        Gemini API Key
-        <input id="apiKeyInput" type="password" placeholder="AIzaSy...">
-        <span style="font-size: 0.8em; color: #666; margin-top: 4px; display: block;">Stored securely in your browser's localStorage.</span>
-      </label>
-    </div>
   </dialog>
 
   <div id="loadingOverlay" class="loading-overlay" hidden>
