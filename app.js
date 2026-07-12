@@ -10,8 +10,8 @@ const state = {
   formTitle: { en: "", gu: "" },
   formIngredients: { en: [], gu: [] },
   formSteps: { en: [], gu: [] },
-  formLang: "en", // Which language is the form currently showing
-  viewLang: "en", // Which language is the recipe view currently showing
+  formLang: "en", 
+  viewLang: "en", 
   
   usingFallback: false,
   activeTab: "all",
@@ -252,12 +252,10 @@ function showTableOfContents() {
 
 // --- DUAL LANGUAGE FORM LOGIC ---
 
-// Helper to save current input values into state before flipping
 function syncInputsToState() {
   state.formTitle[state.formLang] = elements.titleInput.value.trim();
 }
 
-// Helper to push state into inputs
 function syncStateToInputs() {
   elements.titleInput.value = state.formTitle[state.formLang] || "";
   renderFormItems();
@@ -329,8 +327,8 @@ setupDragAndDrop(elements.ingredientsList);
 setupDragAndDrop(elements.stepsList);
 
 function renderFormItems() {
-  renderItemList(elements.ingredientsList, state.formIngredients[state.formLang], "ingredient");
-  renderItemList(elements.stepsList, state.formSteps[state.formLang], "step");
+  renderItemList(elements.ingredientsList, state.formIngredients[state.formLang] || [], "ingredient");
+  renderItemList(elements.stepsList, state.formSteps[state.formLang] || [], "step");
 }
 
 function addFormItem(type) {
@@ -399,17 +397,27 @@ function openForm(recipe = null) {
 // --- CORE API & SAVING ---
 async function loadRecipes() {
   const url = hasApiUrl() ? API_URL : FALLBACK_URL;
-  const response = await fetch(url, { headers: { Accept: "application/json" } });
-  if (!response.ok) throw new Error(`Could not load recipes (${response.status})`);
-  state.recipes = await response.json();
-  state.usingFallback = !hasApiUrl();
+  try {
+    const response = await fetch(url, { headers: { Accept: "application/json" } });
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(`Server returned ${response.status}: ${errText}`);
+    }
+    state.recipes = await response.json();
+    state.usingFallback = !hasApiUrl();
 
-  if (state.selectedRecipeId) {
-    const selectedRecipe = getSelectedRecipe();
-    if (selectedRecipe) renderSelectedRecipe(selectedRecipe);
-    else showTableOfContents();
+    if (state.selectedRecipeId) {
+      const selectedRecipe = getSelectedRecipe();
+      if (selectedRecipe) renderSelectedRecipe(selectedRecipe);
+      else showTableOfContents();
+    }
+    renderRecipes();
+  } catch (err) {
+    console.error("Failed to load recipes:", err);
+    // Show exact error in UI for debugging
+    elements.emptyState.innerHTML = `<h2>Data Error</h2><p style="color:red;">${err.message}</p><p>Check Cloudflare Worker logs.</p>`;
+    elements.emptyState.hidden = false;
   }
-  renderRecipes();
 }
 
 async function saveRecipes(nextRecipes) {
@@ -442,10 +450,10 @@ function buildRecipeFromForm() {
     tags: normalizeTags(elements.tagsInput.value),
     photo: elements.photoInput ? elements.photoInput.value.trim() : "",
     time: elements.timeInput.value.trim(),
-    ingredients: [...state.formIngredients.en],
-    ingredients_gu: [...state.formIngredients.gu],
-    instructions: [...state.formSteps.en],
-    instructions_gu: [...state.formSteps.gu],
+    ingredients: [...(state.formIngredients.en || [])],
+    ingredients_gu: [...(state.formIngredients.gu || [])],
+    instructions: [...(state.formSteps.en || [])],
+    instructions_gu: [...(state.formSteps.gu || [])],
     notes: elements.notesInput.value.trim(),
   };
 }
@@ -455,7 +463,7 @@ async function handleSubmit(event) {
   syncInputsToState();
 
   if (!state.formIngredients[state.formLang].length && !state.formIngredients[state.formLang === 'en' ? 'gu' : 'en'].length) {
-    reportIssue("Add at least one ingredient.");
+    alert("Add at least one ingredient.");
     return;
   }
 
@@ -476,10 +484,10 @@ const recognition = SpeechRecognition ? new SpeechRecognition() : null;
 
 if (recognition) {
   recognition.continuous = false;
-  recognition.interimResults = true; // Allows live text preview
+  recognition.interimResults = true; 
 
   elements.dictateButton?.addEventListener("click", () => {
-    recognition.lang = "en-US"; // Dictate in English by default, AI will parse and translate.
+    recognition.lang = "en-US"; 
     recognition.start();
     elements.dictationStatus.textContent = "Listening... 🎤";
     elements.dictationStatus.hidden = false;
@@ -497,7 +505,7 @@ if (recognition) {
   };
 
   recognition.onerror = (event) => {
-    elements.dictationStatus.textContent = `Speech recognition error: ${event.error}`;
+    elements.dictationStatus.textContent = `Speech error: ${event.error}`;
     elements.dictateButton.disabled = false;
     setTimeout(() => { elements.dictationStatus.hidden = true; }, 3000);
   };
@@ -511,8 +519,9 @@ async function callGeminiAPI(promptText) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ prompt: promptText })
   });
-  if (!response.ok) throw new Error("Failed to communicate with the server.");
-  return await response.json();
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || "Failed to communicate with AI server");
+  return data;
 }
 
 async function parseRecipeWithGemini(spokenText) {
@@ -529,31 +538,34 @@ async function parseRecipeWithGemini(spokenText) {
 
     const parsedData = await callGeminiAPI(prompt);
     
-    state.formTitle.en = parsedData.en.title || state.formTitle.en;
-    state.formIngredients.en = parsedData.en.ingredients || state.formIngredients.en;
-    state.formSteps.en = parsedData.en.instructions || state.formSteps.en;
+    if (parsedData && parsedData.en) {
+      state.formTitle.en = parsedData.en.title || state.formTitle.en;
+      state.formIngredients.en = parsedData.en.ingredients || state.formIngredients.en;
+      state.formSteps.en = parsedData.en.instructions || state.formSteps.en;
+    }
 
-    state.formTitle.gu = parsedData.gu.title || state.formTitle.gu;
-    state.formIngredients.gu = parsedData.gu.ingredients || state.formIngredients.gu;
-    state.formSteps.gu = parsedData.gu.instructions || state.formSteps.gu;
+    if (parsedData && parsedData.gu) {
+      state.formTitle.gu = parsedData.gu.title || state.formTitle.gu;
+      state.formIngredients.gu = parsedData.gu.ingredients || state.formIngredients.gu;
+      state.formSteps.gu = parsedData.gu.instructions || state.formSteps.gu;
+    }
 
     syncStateToInputs();
     
     elements.dictationStatus.textContent = "✨ Recipe loaded in both languages!";
     setTimeout(() => { elements.dictationStatus.hidden = true; }, 3000);
   } catch (error) {
-    elements.dictationStatus.textContent = "Error parsing recipe. Try again.";
-    console.error(error);
+    elements.dictationStatus.textContent = `⚠️ Error: ${error.message}`;
+    console.error("AI Error:", error);
+    setTimeout(() => { elements.dictationStatus.hidden = true; }, 4000);
   }
 }
 
-// UI Flip and Manual Translation Toggle
 elements.translateButton?.addEventListener("click", async () => {
   syncInputsToState();
   const targetLang = state.formLang === 'en' ? 'gu' : 'en';
   
-  // If the target language is completely empty, fetch a translation from Gemini first
-  if (!state.formTitle[targetLang] && state.formIngredients[targetLang].length === 0) {
+  if (!state.formTitle[targetLang] && (!state.formIngredients[targetLang] || state.formIngredients[targetLang].length === 0)) {
     elements.dictationStatus.textContent = `Translating to ${targetLang === 'gu' ? 'Gujarati' : 'English'}...`;
     elements.dictationStatus.hidden = false;
     elements.translateButton.disabled = true;
@@ -578,7 +590,6 @@ elements.translateButton?.addEventListener("click", async () => {
     }
   }
 
-  // Perform the UI Flip
   state.formLang = targetLang;
   elements.translateButton.textContent = state.formLang === 'en' ? '🌐 Translate to Gujarati' : '🌐 Translate to English';
   syncStateToInputs();
@@ -596,7 +607,7 @@ elements.backToContentsButton.addEventListener("click", flipToContents);
 elements.deleteRecipeButton.addEventListener("click", handleDelete);
 elements.editRecipeButton.addEventListener("click", () => openForm(getSelectedRecipe()));
 elements.form.addEventListener("submit", handleSubmit);
-elements.refreshButton.addEventListener("click", () => loadRecipes().catch((error) => reportIssue(error.message)));
+elements.refreshButton.addEventListener("click", () => loadRecipes());
 
 elements.photoPreviewContainer?.addEventListener("click", () => elements.photoFileInput?.click());
 elements.photoFileInput?.addEventListener("change", (event) => {
@@ -650,7 +661,4 @@ loadRecipes().then(() => {
     const recipe = state.recipes.find(r => String(r.id) === String(id));
     if (recipe) flipToRecipe(recipe, false);
   }
-}).catch((error) => {
-  reportIssue(error.message);
-  elements.emptyState.hidden = false;
 });
