@@ -10,7 +10,6 @@ const state = {
   usingFallback: false,
   activeTab: "all",
   isSaving: false,
-  geminiApiKey: localStorage.getItem("geminiApiKey") || "",
 };
 
 const elements = {
@@ -59,12 +58,7 @@ const elements = {
   saveButton: document.querySelector("#saveButton"),
   loadingOverlay: document.querySelector("#loadingOverlay"),
   
-  // New Elements for Settings & AI
-  settingsButton: document.querySelector("#settingsButton"),
-  settingsModal: document.querySelector("#settingsModal"),
-  closeSettingsButton: document.querySelector("#closeSettingsButton"),
-  saveSettingsButton: document.querySelector("#saveSettingsButton"),
-  apiKeyInput: document.querySelector("#apiKeyInput"),
+  // AI Elements
   dictateButton: document.querySelector("#dictateButton"),
   translateButton: document.querySelector("#translateButton"),
   dictationLang: document.querySelector("#dictationLang"),
@@ -682,31 +676,7 @@ elements.recipeList.addEventListener("click", (event) => {
   if (recipe) flipToRecipe(recipe);
 });
 
-// --- Settings & API Key Logic ---
-elements.settingsButton?.addEventListener("click", () => {
-  elements.apiKeyInput.value = state.geminiApiKey || "";
-  openDialog(elements.settingsModal);
-});
-
-elements.closeSettingsButton?.addEventListener("click", () => {
-  closeDialog(elements.settingsModal);
-});
-
-elements.saveSettingsButton?.addEventListener("click", () => {
-  const key = elements.apiKeyInput.value.trim();
-  localStorage.setItem("geminiApiKey", key);
-  state.geminiApiKey = key;
-  if (elements.translateButton) {
-    elements.translateButton.disabled = !key;
-  }
-  closeDialog(elements.settingsModal);
-});
-
-if (elements.translateButton) {
-  elements.translateButton.disabled = !state.geminiApiKey;
-}
-
-// --- AI & Dictation Logic ---
+// --- AI & Dictation Logic (Proxy through Worker) ---
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 const recognition = SpeechRecognition ? new SpeechRecognition() : null;
 
@@ -715,11 +685,6 @@ if (recognition) {
   recognition.interimResults = false;
 
   elements.dictateButton?.addEventListener("click", () => {
-    if (!state.geminiApiKey) {
-      alert("Please add your Gemini API key in Settings first.");
-      openDialog(elements.settingsModal);
-      return;
-    }
     recognition.lang = elements.dictationLang.value;
     recognition.start();
     elements.dictationStatus.textContent = "Listening... (Speak your recipe now)";
@@ -748,21 +713,17 @@ if (recognition) {
 }
 
 async function callGeminiAPI(promptText) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${state.geminiApiKey}`;
+  const url = `${API_URL}/api/ai`; 
   
   const response = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: promptText }] }],
-      generationConfig: { response_mime_type: "application/json" }
-    })
+    body: JSON.stringify({ prompt: promptText })
   });
 
-  if (!response.ok) throw new Error("Failed to communicate with AI.");
+  if (!response.ok) throw new Error("Failed to communicate with the server.");
   
-  const data = await response.json();
-  return JSON.parse(data.candidates[0].content.parts[0].text);
+  return await response.json();
 }
 
 async function parseRecipeWithGemini(spokenText) {
@@ -787,14 +748,12 @@ async function parseRecipeWithGemini(spokenText) {
     elements.dictationStatus.textContent = "✨ Recipe loaded successfully!";
     setTimeout(() => { elements.dictationStatus.hidden = true; }, 3000);
   } catch (error) {
-    elements.dictationStatus.textContent = "Error parsing recipe. Check API key or try again.";
+    elements.dictationStatus.textContent = "Error parsing recipe. Try again.";
     console.error(error);
   }
 }
 
 elements.translateButton?.addEventListener("click", async () => {
-  if (!state.geminiApiKey) return;
-  
   const currentRecipe = {
     title: elements.titleInput.value,
     ingredients: state.formIngredients,
