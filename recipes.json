@@ -121,6 +121,7 @@
   {
     "id": 1783814204565,
     "title": "Homemade Hummus",
+    "title_gu": "",
     "tags": [
       "Healthy",
       "Protien"
@@ -134,14 +135,15 @@
       "1/2 tsp ground cumin, salt",
       "1 garlic clove",
       "2 tbsp olive oil",
-      "1/4 cup lemon juice",
       "1/4 cup tahini"
     ],
+    "ingredients_gu": [],
     "instructions": [
       "Put everything in blender except the can liquid",
       "Blend 30 seconds, add the liquid and blend again",
       "Serve with olive oil topping with red chilli powder."
     ],
+    "instructions_gu": [],
     "notes": "Can also mix roasted garlic or roasted red peppers for garlic or red pepper hummus"
   }
 ]
